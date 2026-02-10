@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>LootMart</title>
+  <meta name="description" content="Get loot from your nearby marts!"/>
+  <link rel="icon" href="https://www.lootmart.com.pk/favicon.ico" type="image/x-icon" sizes="32x32"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              DEFAULT: '#E5A528',
+              foreground: '#0D1117',
+              50: '#FEF9EC',
+              100: '#FDF0CC',
+              200: '#FBDF99',
+              300: '#F9CE66',
+              400: '#F2B833',
+              500: '#E5A528',
+              600: '#C4881C',
+              700: '#9A6615',
+              800: '#7A510F',
+              900: '#5A3C0B',
+            },
+            background: '#FAFAF8',
+            foreground: '#1E2A3B',
+            card: '#FFFFFF',
+            muted: {
+              DEFAULT: '#F0F0EE',
+              foreground: '#6B7280',
+            },
+            accent: {
+              DEFAULT: '#F0EDE6',
+            },
+            destructive: '#D93636',
+            success: '#22C55E',
+            border: '#E5E5E5',
+          },
+          borderRadius: {
+            'lg': '0.625rem',
+            'xl': '0.875rem',
+            '2xl': '1rem',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #FAFAF8; color: #1E2A3B; -webkit-font-smoothing: antialiased; }
+    
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(2px);
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-content {
+      background: white; border-radius: 12px; padding: 24px;
+      max-width: 600px; width: calc(100% - 32px);
+      max-height: 80vh; overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      animation: scaleIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+    /* WhatsApp bubble */
+    .whatsapp-bubble { transition: all 0.3s; }
+    .whatsapp-bubble:hover { transform: scale(1.1); }
+
+    /* Area card hover */
+    .area-card {
+      transition: all 0.15s;
+      cursor: pointer;
+      border: 1px solid #E5E5E5;
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .area-card:hover {
+      border-color: #E5A528;
+      background: #FEF9EC;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Login modal */
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(2px);
+      animation: fadeIn 0.2s ease;
+    }
+    .login-modal {
+      background: white; border-radius: 12px;
+      max-width: 420px; width: calc(100% - 32px);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      animation: scaleIn 0.2s ease;
+      overflow: hidden;
+    }
+
+    /* Store select sheet (mobile) */
+    .sheet-overlay {
+      position: fixed; inset: 0; z-index: 150;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(2px);
+      animation: fadeIn 0.2s ease;
+    }
+    .sheet-content {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-radius: 16px 16px 0 0;
+      padding: 24px; max-height: 80vh; overflow-y: auto;
+      animation: slideUp 0.3s ease;
+      z-index: 151;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    /* Skeleton pulse */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .skeleton-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+    /* Spinner */
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1E2A3B; color: white; padding: 12px 24px;
+      border-radius: 8px; font-size: 14px; z-index: 300;
+      animation: slideUpToast 0.3s ease;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    @keyframes slideUpToast { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+    /* Select trigger style */
+    .select-trigger {
+      display: flex; align-items: center; justify-content: between;
+      gap: 8px; border-radius: 6px; border: 1px solid transparent;
+      padding: 6px 12px; font-size: 14px;
+      background: transparent; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .select-trigger:hover { background: #F3F4F6; }
+
+    /* Select dropdown */
+    .select-dropdown {
+      position: absolute; top: 100%; right: 0; margin-top: 4px;
+      background: white; border: 1px solid #E5E5E5; border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+      min-width: 220px; z-index: 50; padding: 4px;
+      animation: scaleIn 0.15s ease;
+    }
+    .select-option {
+      padding: 8px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 14px; transition: background 0.1s;
+    }
+    .select-option:hover { background: #F3F4F6; }
+    .select-option.active { background: #FEF9EC; color: #E5A528; }
+  </style>
+</head>
+<body class="antialiased">
+  <!-- Header -->
+  <div class="w-full border-b" style="border-color: #F3F4F6;">
+    <div class="flex md:justify-between justify-center items-center w-full px-4 py-3 min-w-0 relative">
+      <!-- Logo -->
+      <a class="shrink-0" href="index.html">
+        <img alt="LootMart" width="150" height="73" class="h-9 w-auto md:h-11"
+          style="color:transparent"
+          src="https://www.lootmart.com.pk/_next/image?url=%2Flogo-header-300x147.png&w=384&q=75"/>
+      </a>
+
+      <!-- Center - Search (hidden on homepage, shown when store selected) -->
+      <div class="hidden md:flex flex-1 justify-center min-w-0 mx-4" id="headerSearch"></div>
+
+      <!-- Desktop right section -->
+      <div class="hidden md:flex shrink-0 items-center gap-2">
+        <div class="hidden md:flex items-center gap-2">
+          <!-- Location Select -->
+          <div class="relative" id="locationSelectDesktop">
+            <button class="select-trigger w-[200px]" onclick="toggleLocationDropdown()" id="locationBtn">
+              <div class="flex items-center gap-2 text-left">
+                <i data-lucide="map-pin" class="w-4 h-4 text-gray-600 flex-shrink-0"></i>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs text-gray-500">Location</span>
+                  <span class="text-sm truncate" id="selectedAreaDesktop">Select area</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="w-4 h-4 opacity-50"></i>
+            </button>
+            <div class="select-dropdown hidden" id="locationDropdown">
+              <!-- Areas populated by JS -->
+            </div>
+          </div>
+
+          <!-- User Menu -->
+          <div class="flex items-center" id="userMenuDesktop">
+            <button class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors" onclick="showLoginModal()">
+              <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                <span class="text-xs font-medium text-gray-500">GU</span>
+              </div>
+              <span class="text-sm text-gray-700">Guest</span>
+              <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile right section -->
+      <div class="md:hidden absolute right-4 top-1/2 -translate-y-1/2">
+        <button class="flex items-center gap-2" onclick="showLoginModal()">
+          <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+            <span class="text-xs font-medium text-gray-500">GU</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile sub-navigation -->
+    <div class="md:hidden w-full border-t" style="border-color: #F3F4F6;">
+      <div class="flex items-center justify-center gap-3 py-2 px-4">
+        <button class="flex items-center gap-1.5 text-xs text-gray-700 hover:text-gray-900 transition-colors" onclick="showAreaSheet()">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+          <span class="font-medium" id="mobileAreaLabel">Select area</span>
+          <i data-lucide="chevron-down" class="w-3 h-3"></i>
+        </button>
+        <span class="text-gray-300">&bull;</span>
+        <button class="flex items-center gap-1.5 text-xs hover:text-blue-900 transition-colors" id="storeSelectBtn" onclick="showStoreSheet()" disabled>
+          <i data-lucide="store" class="w-3.5 h-3.5 text-blue-600"></i>
+          <span class="font-medium text-blue-900" id="mobileStoreLabel">Select store</span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-blue-600"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-auto" id="mainContent">
+    <!-- Initial state: Area selection prompt -->
+    <div class="min-h-screen flex items-center justify-center" id="initialView">
+      <div class="text-center px-4">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-4" style="border-color: #E5A528;"></div>
+        <p class="text-gray-500 text-sm">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Area selection shown after load -->
+    <div class="hidden" id="areaSelectionView">
+      <div class="max-w-4xl mx-auto px-4 py-12">
+        <div class="text-center mb-8">
+          <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Welcome to LootMart</h1>
+          <p class="text-gray-500">Select your delivery area to get started</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="areaGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Store selection view -->
+    <div class="hidden" id="storeSelectionView">
+      <div class="max-w-4xl mx-auto px-4 py-12">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Available Stores</h2>
+          <p class="text-gray-500" id="storeAreaName">Choose a store in your area</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="storeGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Choose Delivery Area Modal (shows on first load) -->
+  <div class="modal-overlay" id="areaModal">
+    <div class="modal-content">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="text-lg font-semibold text-gray-900">Choose delivery area</h2>
+        <button onclick="closeAreaModal()" class="p-1 rounded-md hover:bg-gray-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+      <p class="text-sm text-gray-500 mb-5">Select your location to see available stores</p>
+      <div class="space-y-2" id="areaModalList">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal (hidden by default) -->
+  <div class="login-overlay hidden" id="loginModal">
+    <div class="login-modal">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-lg font-semibold text-gray-900">Login to your account</h2>
+          <button onclick="closeLoginModal()" class="p-1 rounded-md hover:bg-gray-100 transition-colors">
+            <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+          </button>
+        </div>
+
+        <p class="text-sm text-gray-500 mb-4">Login with your Google account</p>
+
+        <button class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mb-4">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          <span class="text-sm font-medium text-gray-700">Login with Google</span>
+        </button>
+
+        <p class="text-xs text-gray-400 text-center mb-4">
+          By continuing, you agree to our <a href="#" class="text-blue-600 hover:underline">Privacy Policy</a>
+        </p>
+
+        <div class="border-t pt-4">
+          <p class="text-sm text-gray-500 text-center">
+            Don't have an account? <a href="#" class="text-blue-600 font-medium hover:underline">Sign up</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Bottom decorative image area -->
+      <div class="bg-gradient-to-br from-primary-50 to-primary-100 p-8 flex items-center justify-center">
+        <div class="text-center">
+          <img src="https://www.lootmart.com.pk/_next/image?url=%2Flogo-header-300x147.png&w=384&q=75" alt="LootMart" class="h-12 mx-auto mb-2 opacity-60"/>
+          <p class="text-xs text-primary-600 opacity-60">Get loot from your nearby marts!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Area Sheet (hidden) -->
+  <div class="hidden" id="areaSheetOverlay">
+    <div class="sheet-overlay" onclick="closeAreaSheet()"></div>
+    <div class="sheet-content">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Choose delivery area</h3>
+        <button onclick="closeAreaSheet()" class="p-1 rounded-md hover:bg-gray-100">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+      <p class="text-sm text-gray-500 mb-4">Select your location to see available stores</p>
+      <div class="space-y-2" id="areaSheetList">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Store Sheet (hidden) -->
+  <div class="hidden" id="storeSheetOverlay">
+    <div class="sheet-overlay" onclick="closeStoreSheet()"></div>
+    <div class="sheet-content">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Select a store</h3>
+        <button onclick="closeStoreSheet()" class="p-1 rounded-md hover:bg-gray-100">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+      <div class="space-y-2" id="storeSheetList">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Floating Button -->
+  <div class="fixed right-6 z-50 whatsapp-bubble" style="bottom: 24px;">
+    <button class="inline-flex items-center justify-center h-14 w-14 rounded-full shadow-lg text-white transition-all duration-300 hover:scale-110 p-0"
+      style="background: #22C55E;"
+      onmouseover="this.style.background='#16A34A'" onmouseout="this.style.background='#22C55E'"
+      aria-label="Open help chat">
+      <span class="flex h-full w-full items-center justify-center">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="h-full w-full" style="transform:scale(1.3)" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"></path>
+        </svg>
+      </span>
+    </button>
+  </div>
+
+  <!-- Notification area -->
+  <section aria-label="Notifications alt+T" tabindex="-1" aria-live="polite" aria-relevant="additions text" aria-atomic="false"></section>
+
+  <script>
+    // ==================== DATA ====================
+    const areas = [
+      { id: 7, name: "Askari 14, Sector A/B", city: "Rawalpindi" },
+      { id: 8, name: "Askari 14, Sector D", city: "Rawalpindi" },
+      { id: 5, name: "Bahria Phase 8", city: "Rawalpindi" },
+      { id: 6, name: "DHA Phase 2", city: "Islamabad" },
+      { id: 2, name: "Sector F-7", city: "Islamabad" },
+      { id: 3, name: "Sector H-12", city: "Islamabad" },
+      { id: 4, name: "Sector H-13", city: "Islamabad" }
+    ];
+
+    const stores = [
+      {
+        id: 24, name: "Hash Mart", slug: "hash-mart", store_type: "mart",
+        same_day_delivery: true, delivery_charges: 200, min_order_value: 100,
+        free_delivery_threshold: 500, areas: [5]
+      },
+      {
+        id: 22, name: "Royal Cash & Carry", slug: "royal-cash-and-carry", store_type: "mart",
+        same_day_delivery: true, delivery_charges: 100, min_order_value: 100,
+        free_delivery_threshold: 1000, areas: [2, 4]
+      }
+    ];
+
+    let selectedArea = null;
+    let selectedStore = null;
+    let locationDropdownOpen = false;
+
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      populateAreaModal();
+      populateAreaSheet();
+      populateLocationDropdown();
+
+      // Show area selection view after brief loading animation
+      setTimeout(() => {
+        document.getElementById('initialView').classList.add('hidden');
+        document.getElementById('areaSelectionView').classList.remove('hidden');
+        populateAreaGrid();
+      }, 800);
+    });
+
+    // ==================== AREA FUNCTIONS ====================
+    function populateAreaModal() {
+      const container = document.getElementById('areaModalList');
+      container.innerHTML = areas.map(a => `
+        <div class="area-card" onclick="selectArea(${a.id})">
+          <div class="font-medium text-sm text-gray-900">${a.name}</div>
+          <div class="text-xs text-gray-500 mt-0.5">${a.city}</div>
+        </div>
+      `).join('');
+    }
+
+    function populateAreaSheet() {
+      const container = document.getElementById('areaSheetList');
+      container.innerHTML = areas.map(a => `
+        <div class="area-card" onclick="selectArea(${a.id}); closeAreaSheet();">
+          <div class="font-medium text-sm text-gray-900">${a.name}</div>
+          <div class="text-xs text-gray-500 mt-0.5">${a.city}</div>
+        </div>
+      `).join('');
+    }
+
+    function populateAreaGrid() {
+      const container = document.getElementById('areaGrid');
+      container.innerHTML = areas.map(a => `
+        <div class="area-card flex items-center gap-3" onclick="selectArea(${a.id})">
+          <div class="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0" style="background: #FEF9EC;">
+            <i data-lucide="map-pin" class="w-5 h-5" style="color: #E5A528;"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="font-medium text-sm text-gray-900">${a.name}</div>
+            <div class="text-xs text-gray-500">${a.city}</div>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function populateLocationDropdown() {
+      const container = document.getElementById('locationDropdown');
+      container.innerHTML = areas.map(a => `
+        <div class="select-option" onclick="selectArea(${a.id}); closeLocationDropdown();">
+          <div class="font-medium text-sm">${a.name}</div>
+          <div class="text-xs text-gray-500">${a.city}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectArea(areaId) {
+      const area = areas.find(a => a.id === areaId);
+      if (!area) return;
+      selectedArea = area;
+
+      // Update UI
+      document.getElementById('selectedAreaDesktop').textContent = area.name;
+      document.getElementById('mobileAreaLabel').textContent = area.name;
+
+      // Enable store select button on mobile
+      document.getElementById('storeSelectBtn').disabled = false;
+
+      // Close modal
+      closeAreaModal();
+      closeLocationDropdown();
+
+      // Find matching stores
+      const matchingStores = stores.filter(s => s.areas.includes(areaId));
+
+      if (matchingStores.length === 0) {
+        // No stores - show message
+        document.getElementById('areaSelectionView').classList.add('hidden');
+        document.getElementById('storeSelectionView').classList.remove('hidden');
+        document.getElementById('storeAreaName').textContent = `No stores available in ${area.name} yet`;
+        document.getElementById('storeGrid').innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <i data-lucide="store" class="w-12 h-12 mx-auto text-gray-300 mb-4"></i>
+            <p class="text-gray-500">No stores available in this area yet.</p>
+            <p class="text-gray-400 text-sm mt-1">Please check back later!</p>
+          </div>
+        `;
+        lucide.createIcons();
+      } else if (matchingStores.length === 1) {
+        // Auto-redirect to store
+        window.location.href = `store.html?store=${matchingStores[0].slug}&area=${encodeURIComponent(area.name)}`;
+      } else {
+        // Show store selection
+        showStoreSelection(matchingStores, area);
+      }
+    }
+
+    function showStoreSelection(matchingStores, area) {
+      document.getElementById('areaSelectionView').classList.add('hidden');
+      document.getElementById('storeSelectionView').classList.remove('hidden');
+      document.getElementById('storeAreaName').textContent = `Stores delivering to ${area.name}`;
+
+      const container = document.getElementById('storeGrid');
+      container.innerHTML = matchingStores.map(s => `
+        <a href="store.html?store=${s.slug}&area=${encodeURIComponent(area.name)}" class="block bg-white border border-gray-200 rounded-xl p-5 hover:border-primary-500 hover:shadow-md transition-all group">
+          <div class="flex items-center gap-4">
+            <div class="h-14 w-14 rounded-xl flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #FEF9EC, #FDF0CC);">
+              <i data-lucide="store" class="w-7 h-7" style="color: #E5A528;"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">${s.name}</div>
+              <div class="text-xs text-gray-500 mt-1">
+                ${s.same_day_delivery ? '<span class="inline-flex items-center gap-1 text-green-600"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Same-day delivery</span>' : ''}
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
+            <span>Delivery: Rs. ${s.delivery_charges}</span>
+            <span>&bull;</span>
+            <span>Min order: Rs. ${s.min_order_value}</span>
+            <span>&bull;</span>
+            <span>Free delivery: Rs. ${s.free_delivery_threshold}+</span>
+          </div>
+        </a>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // ==================== MODAL FUNCTIONS ====================
+    function closeAreaModal() {
+      const modal = document.getElementById('areaModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function showLoginModal() {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      document.getElementById('loginModal').classList.add('hidden');
+    }
+
+    function showAreaSheet() {
+      document.getElementById('areaSheetOverlay').classList.remove('hidden');
+    }
+
+    function closeAreaSheet() {
+      document.getElementById('areaSheetOverlay').classList.add('hidden');
+    }
+
+    function showStoreSheet() {
+      if (!selectedArea) return;
+      const matchingStores = stores.filter(s => s.areas.includes(selectedArea.id));
+      const container = document.getElementById('storeSheetList');
+      container.innerHTML = matchingStores.map(s => `
+        <a href="store.html?store=${s.slug}&area=${encodeURIComponent(selectedArea.name)}" class="block area-card">
+          <div class="font-medium text-sm text-gray-900">${s.name}</div>
+          <div class="text-xs text-gray-500 mt-1">Delivery: Rs. ${s.delivery_charges} &bull; Free over Rs. ${s.free_delivery_threshold}</div>
+        </a>
+      `).join('');
+      if (matchingStores.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">No stores available in this area</p>';
+      }
+      document.getElementById('storeSheetOverlay').classList.remove('hidden');
+    }
+
+    function closeStoreSheet() {
+      document.getElementById('storeSheetOverlay').classList.add('hidden');
+    }
+
+    function toggleLocationDropdown() {
+      const dropdown = document.getElementById('locationDropdown');
+      locationDropdownOpen = !locationDropdownOpen;
+      if (locationDropdownOpen) {
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    }
+
+    function closeLocationDropdown() {
+      locationDropdownOpen = false;
+      document.getElementById('locationDropdown').classList.add('hidden');
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      const locSelect = document.getElementById('locationSelectDesktop');
+      if (locSelect && !locSelect.contains(e.target)) {
+        closeLocationDropdown();
+      }
+    });
+  </script>
+</body>
+</html>

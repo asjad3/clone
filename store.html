@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>LootMart - Store</title>
+  <meta name="description" content="Get loot from your nearby marts!"/>
+  <link rel="icon" href="https://www.lootmart.com.pk/favicon.ico" type="image/x-icon" sizes="32x32"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              DEFAULT: '#E5A528',
+              foreground: '#0D1117',
+              50: '#FEF9EC',
+              100: '#FDF0CC',
+              200: '#FBDF99',
+              300: '#F9CE66',
+              400: '#F2B833',
+              500: '#E5A528',
+              600: '#C4881C',
+              700: '#9A6615',
+              800: '#7A510F',
+              900: '#5A3C0B',
+            },
+            background: '#FAFAF8',
+            foreground: '#1E2A3B',
+            card: '#FFFFFF',
+            muted: {
+              DEFAULT: '#F0F0EE',
+              foreground: '#6B7280',
+            },
+            accent: {
+              DEFAULT: '#F0EDE6',
+            },
+            destructive: '#D93636',
+            success: '#22C55E',
+            border: '#E5E5E5',
+          },
+          borderRadius: {
+            'lg': '0.625rem',
+            'xl': '0.875rem',
+            '2xl': '1rem',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+      background: #FAFAF8; color: #1E2A3B; 
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden; height: 100vh;
+    }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Custom scrollbar for sidebar */
+    .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+    .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+    /* Product grid scrollbar */
+    .products-scroll::-webkit-scrollbar { width: 6px; }
+    .products-scroll::-webkit-scrollbar-track { background: transparent; }
+    .products-scroll::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+    .products-scroll::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes bounceIn { 
+      0% { transform: scale(0.3); opacity: 0; }
+      50% { transform: scale(1.05); }
+      70% { transform: scale(0.9); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .animate-spin { animation: spin 1s linear infinite; }
+    .animate-fadeIn { animation: fadeIn 0.3s ease; }
+    .animate-bounceIn { animation: bounceIn 0.4s ease; }
+
+    /* WhatsApp bubble */
+    .whatsapp-bubble { transition: all 0.3s; }
+    .whatsapp-bubble:hover { transform: scale(1.1); }
+
+    /* Category item */
+    .category-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 8px;
+      cursor: pointer; transition: all 0.15s;
+      font-size: 13px; color: #4B5563;
+      white-space: nowrap;
+    }
+    .category-item:hover { background: #F3F4F6; color: #1F2937; }
+    .category-item.active { 
+      background: #FEF9EC; color: #C4881C; font-weight: 600;
+      border-left: 3px solid #E5A528;
+    }
+    .category-item img {
+      width: 36px; height: 36px; border-radius: 8px; object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    /* Subcategory chip */
+    .subcategory-chip {
+      display: inline-flex; align-items: center;
+      padding: 6px 14px; border-radius: 9999px;
+      font-size: 13px; cursor: pointer; transition: all 0.15s;
+      border: 1px solid #E5E7EB; background: white; color: #4B5563;
+      white-space: nowrap;
+    }
+    .subcategory-chip:hover { border-color: #E5A528; color: #C4881C; }
+    .subcategory-chip.active { 
+      background: #E5A528; color: white; border-color: #E5A528;
+      font-weight: 500;
+    }
+
+    /* Product card */
+    .product-card {
+      background: white; border-radius: 12px;
+      border: 1px solid #F3F4F6;
+      overflow: hidden; transition: all 0.2s;
+      display: flex; flex-direction: column;
+    }
+    .product-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      border-color: #E5E7EB;
+    }
+    .product-card .product-image-wrap {
+      position: relative; padding-top: 100%;
+      background: #F9FAFB;
+    }
+    .product-card .product-image-wrap img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; padding: 12px;
+    }
+    .product-card .product-info {
+      padding: 10px 12px 12px; flex: 1;
+      display: flex; flex-direction: column;
+    }
+    .product-card .product-name {
+      font-size: 13px; font-weight: 500; color: #1F2937;
+      line-height: 1.3; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; min-height: 34px;
+    }
+    .product-card .product-weight {
+      font-size: 11px; color: #9CA3AF; margin-top: 2px;
+    }
+    .product-card .product-price-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: auto; padding-top: 8px;
+    }
+    .product-card .product-price {
+      font-weight: 700; font-size: 15px; color: #1F2937;
+    }
+    .product-card .product-old-price {
+      font-size: 12px; color: #9CA3AF; text-decoration: line-through;
+      margin-left: 6px;
+    }
+    .product-card .product-discount {
+      font-size: 11px; font-weight: 600; color: #DC2626;
+      background: #FEF2F2; padding: 2px 6px; border-radius: 4px;
+    }
+
+    /* Add to cart button */
+    .add-to-cart-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      background: #E5A528; color: white; border: none;
+      cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+    }
+    .add-to-cart-btn:hover { background: #C4881C; transform: scale(1.05); }
+    .add-to-cart-btn:active { transform: scale(0.95); }
+
+    /* Quantity control */
+    .qty-control {
+      display: flex; align-items: center; gap: 0;
+      border: 1px solid #E5A528; border-radius: 8px;
+      overflow: hidden;
+    }
+    .qty-btn {
+      width: 28px; height: 28px; display: flex; align-items: center;
+      justify-content: center; background: white; border: none;
+      cursor: pointer; color: #E5A528; font-size: 16px; font-weight: 600;
+      transition: background 0.1s;
+    }
+    .qty-btn:hover { background: #FEF9EC; }
+    .qty-value {
+      width: 28px; text-align: center; font-size: 13px; font-weight: 600;
+      color: #E5A528; background: white;
+    }
+
+    /* Cart sidebar */
+    .cart-sidebar {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 380px; max-width: 100vw; background: white;
+      box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+      z-index: 200; display: flex; flex-direction: column;
+      animation: slideInRight 0.3s ease;
+    }
+    .cart-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 199; animation: fadeIn 0.2s ease;
+      backdrop-filter: blur(2px);
+    }
+
+    /* Search bar */
+    .search-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: #F3F4F6; border-radius: 8px;
+      padding: 8px 14px; max-width: 400px; width: 100%;
+      border: 1px solid transparent; transition: all 0.2s;
+    }
+    .search-bar:focus-within {
+      background: white; border-color: #E5A528;
+      box-shadow: 0 0 0 3px rgba(229,165,40,0.1);
+    }
+    .search-bar input {
+      flex: 1; border: none; background: transparent;
+      outline: none; font-size: 14px; color: #1F2937;
+    }
+    .search-bar input::placeholder { color: #9CA3AF; }
+
+    /* Login modal */
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.5); display: flex;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(2px); animation: fadeIn 0.2s ease;
+    }
+    .login-modal {
+      background: white; border-radius: 12px;
+      max-width: 420px; width: calc(100% - 32px);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      animation: scaleIn 0.2s ease; overflow: hidden;
+    }
+
+    /* Select trigger */
+    .select-trigger {
+      display: flex; align-items: center; justify-content: between;
+      gap: 8px; border-radius: 6px; border: 1px solid transparent;
+      padding: 6px 12px; font-size: 14px;
+      background: transparent; cursor: pointer; transition: background 0.15s;
+    }
+    .select-trigger:hover { background: #F3F4F6; }
+
+    .select-dropdown {
+      position: absolute; top: 100%; right: 0; margin-top: 4px;
+      background: white; border: 1px solid #E5E5E5; border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+      min-width: 220px; z-index: 50; padding: 4px;
+      animation: scaleIn 0.15s ease; max-height: 300px; overflow-y: auto;
+    }
+    .select-option {
+      padding: 8px 12px; border-radius: 6px; cursor: pointer;
+      font-size: 14px; transition: background 0.1s;
+    }
+    .select-option:hover { background: #F3F4F6; }
+    .select-option.active { background: #FEF9EC; color: #E5A528; }
+
+    /* Mobile bottom sheet */
+    .sheet-overlay { 
+      position: fixed; inset: 0; z-index: 150; 
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); 
+      animation: fadeIn 0.2s ease; 
+    }
+    .sheet-content {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-radius: 16px 16px 0 0;
+      padding: 24px; max-height: 80vh; overflow-y: auto;
+      animation: slideUp 0.3s ease; z-index: 151;
+    }
+
+    /* Cart mini badge */
+    .cart-badge {
+      position: absolute; top: -4px; right: -4px;
+      background: #DC2626; color: white; font-size: 10px;
+      font-weight: 700; min-width: 18px; height: 18px;
+      border-radius: 9px; display: flex; align-items: center;
+      justify-content: center; padding: 0 4px;
+      animation: bounceIn 0.4s ease;
+    }
+
+    /* Store info bar */
+    .store-info-bar {
+      background: linear-gradient(135deg, #FEF9EC 0%, #FFFBEB 100%);
+      border-bottom: 1px solid #FDF0CC;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #1E2A3B; color: white; padding: 10px 20px;
+      border-radius: 8px; font-size: 13px; z-index: 300;
+      animation: slideUpToast 0.3s ease;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    @keyframes slideUpToast { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+    /* Mobile categories scroll */
+    .mobile-categories {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 12px 16px; -webkit-overflow-scrolling: touch;
+    }
+    .mobile-categories::-webkit-scrollbar { display: none; }
+
+    /* Mobile bottom cart bar */
+    .mobile-cart-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #E5A528; color: white; padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .mobile-cart-bar:hover { background: #C4881C; }
+
+    /* Area card */
+    .area-card {
+      transition: all 0.15s; cursor: pointer;
+      border: 1px solid #E5E5E5; border-radius: 10px; padding: 16px;
+    }
+    .area-card:hover { border-color: #E5A528; background: #FEF9EC; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    @media (max-width: 767px) {
+      .cart-sidebar { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="w-full border-b bg-white" style="border-color: #F3F4F6; position: relative; z-index: 40;">
+    <div class="flex md:justify-between justify-center items-center w-full px-4 py-3 min-w-0 relative">
+      <!-- Logo -->
+      <a class="shrink-0" href="index.html">
+        <img alt="LootMart" width="150" height="73" class="h-9 w-auto md:h-11" style="color:transparent"
+          src="https://www.lootmart.com.pk/_next/image?url=%2Flogo-header-300x147.png&w=384&q=75"/>
+      </a>
+
+      <!-- Center - Search bar -->
+      <div class="hidden md:flex flex-1 justify-center min-w-0 mx-4">
+        <div class="search-bar">
+          <i data-lucide="search" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+          <input type="text" placeholder="Search products..." id="searchInput" oninput="handleSearch(this.value)"/>
+        </div>
+      </div>
+
+      <!-- Desktop right section -->
+      <div class="hidden md:flex shrink-0 items-center gap-2">
+        <div class="hidden md:flex items-center gap-2">
+          <!-- Location Select -->
+          <div class="relative" id="locationSelectDesktop">
+            <button class="select-trigger" onclick="toggleLocationDropdown()" id="locationBtn">
+              <div class="flex items-center gap-2 text-left">
+                <i data-lucide="map-pin" class="w-4 h-4 text-gray-600 flex-shrink-0"></i>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs text-gray-500">Location</span>
+                  <span class="text-sm truncate" id="selectedAreaDesktop" style="max-width:120px;">Loading...</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="w-4 h-4 opacity-50"></i>
+            </button>
+            <div class="select-dropdown hidden" id="locationDropdown"></div>
+          </div>
+
+          <!-- Cart button -->
+          <button class="relative p-2 rounded-md hover:bg-gray-100 transition-colors" onclick="toggleCart()">
+            <i data-lucide="shopping-bag" class="w-5 h-5 text-gray-700"></i>
+            <span class="cart-badge hidden" id="cartBadgeDesktop">0</span>
+          </button>
+
+          <!-- User Menu -->
+          <div class="flex items-center">
+            <button class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors" onclick="showLoginModal()">
+              <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                <span class="text-xs font-medium text-gray-500">GU</span>
+              </div>
+              <span class="text-sm text-gray-700">Guest</span>
+              <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile right section -->
+      <div class="md:hidden absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        <button class="relative p-1.5" onclick="toggleCart()">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-gray-700"></i>
+          <span class="cart-badge hidden" id="cartBadgeMobile">0</span>
+        </button>
+        <button class="flex items-center" onclick="showLoginModal()">
+          <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+            <span class="text-xs font-medium text-gray-500">GU</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile search bar -->
+    <div class="md:hidden px-4 pb-3">
+      <div class="search-bar">
+        <i data-lucide="search" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+        <input type="text" placeholder="Search products..." oninput="handleSearch(this.value)"/>
+      </div>
+    </div>
+
+    <!-- Mobile sub-navigation -->
+    <div class="md:hidden w-full border-t" style="border-color: #F3F4F6;">
+      <div class="flex items-center justify-center gap-3 py-2 px-4">
+        <button class="flex items-center gap-1.5 text-xs text-gray-700 hover:text-gray-900 transition-colors" onclick="showAreaSheet()">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+          <span class="font-medium" id="mobileAreaLabel">Loading...</span>
+          <i data-lucide="chevron-down" class="w-3 h-3"></i>
+        </button>
+        <span class="text-gray-300">&bull;</span>
+        <button class="flex items-center gap-1.5 text-xs hover:text-blue-900 transition-colors">
+          <i data-lucide="store" class="w-3.5 h-3.5 text-blue-600"></i>
+          <span class="font-medium text-blue-900" id="mobileStoreLabel">Loading...</span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-blue-600"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Info Bar -->
+  <div class="store-info-bar hidden" id="storeInfoBar">
+    <div class="max-w-7xl mx-auto px-4 py-2 flex items-center gap-4 text-xs overflow-x-auto scrollbar-hide">
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <i data-lucide="truck" class="w-3.5 h-3.5 text-primary-600"></i>
+        <span class="text-gray-600">Delivery: <strong class="text-gray-900" id="deliveryChargeInfo">Rs. 100</strong></span>
+      </div>
+      <span class="text-gray-300 flex-shrink-0">|</span>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <i data-lucide="package" class="w-3.5 h-3.5 text-primary-600"></i>
+        <span class="text-gray-600">Min order: <strong class="text-gray-900" id="minOrderInfo">Rs. 100</strong></span>
+      </div>
+      <span class="text-gray-300 flex-shrink-0">|</span>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <i data-lucide="gift" class="w-3.5 h-3.5 text-green-600"></i>
+        <span class="text-gray-600">Free delivery over <strong class="text-green-700" id="freeDeliveryInfo">Rs. 1,000</strong></span>
+      </div>
+      <span class="text-gray-300 flex-shrink-0">|</span>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <svg class="w-3.5 h-3.5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span class="text-green-700 font-medium">Same-day delivery</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Layout: Sidebar + Products -->
+  <div class="flex" style="height: calc(100vh - 130px);" id="mainLayout">
+    <!-- Desktop Category Sidebar -->
+    <div class="hidden md:flex flex-col w-[240px] flex-shrink-0 border-r bg-white sidebar-scroll overflow-y-auto" style="border-color: #F3F4F6;" id="categorySidebar">
+      <div class="p-3">
+        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-2">Categories</h3>
+        <div class="space-y-0.5" id="categorySidebarList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Category Chips (horizontal scroll) -->
+    <div class="md:hidden mobile-categories border-b bg-white" style="border-color: #F3F4F6;" id="mobileCategoryBar">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Products Area -->
+    <div class="flex-1 products-scroll overflow-y-auto" id="productsArea">
+      <!-- Subcategory chips -->
+      <div class="hidden px-4 pt-4 pb-2" id="subcategoryBar">
+        <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-1" id="subcategoryChips">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Category title -->
+      <div class="px-4 pt-4 pb-2" id="categoryTitleSection">
+        <h2 class="text-lg font-bold text-gray-900" id="categoryTitle">All Products</h2>
+        <p class="text-sm text-gray-500 mt-0.5" id="productCount">Loading products...</p>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="px-4 pb-20">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3" id="productsGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="hidden text-center py-16 px-4" id="emptyState">
+        <i data-lucide="search-x" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
+        <p class="text-gray-500 font-medium">No products found</p>
+        <p class="text-gray-400 text-sm mt-1">Try searching for something else</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Sidebar -->
+  <div class="hidden" id="cartWrapper">
+    <div class="cart-overlay" onclick="toggleCart()"></div>
+    <div class="cart-sidebar">
+      <div class="flex items-center justify-between p-4 border-b" style="border-color: #F3F4F6;">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-gray-700"></i>
+          <h3 class="font-semibold text-gray-900">Your Cart</h3>
+          <span class="text-sm text-gray-500" id="cartItemCount">(0 items)</span>
+        </div>
+        <button onclick="toggleCart()" class="p-1 rounded-md hover:bg-gray-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4" id="cartItems">
+        <!-- Cart items populated by JS -->
+        <div class="text-center py-12" id="emptyCartView">
+          <i data-lucide="shopping-bag" class="w-16 h-16 mx-auto text-gray-200 mb-4"></i>
+          <p class="text-gray-500 font-medium">Your cart is empty</p>
+          <p class="text-gray-400 text-sm mt-1">Start adding products to your cart</p>
+        </div>
+      </div>
+
+      <div class="border-t p-4" style="border-color: #F3F4F6;" id="cartFooter">
+        <div class="space-y-2 mb-4">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Subtotal</span>
+            <span class="font-medium" id="cartSubtotal">Rs. 0</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Delivery</span>
+            <span class="font-medium" id="cartDelivery">Rs. 0</span>
+          </div>
+          <div class="flex justify-between text-base font-semibold pt-2 border-t" style="border-color:#F3F4F6;">
+            <span>Total</span>
+            <span id="cartTotal">Rs. 0</span>
+          </div>
+        </div>
+        <button class="w-full py-3 rounded-lg font-semibold text-sm text-white transition-colors" 
+          style="background: #E5A528;" 
+          onmouseover="this.style.background='#C4881C'" 
+          onmouseout="this.style.background='#E5A528'"
+          onclick="showLoginModal(); toggleCart();">
+          Login to Checkout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Cart Bar -->
+  <div class="md:hidden hidden" id="mobileCartBar" onclick="toggleCart()">
+    <div class="mobile-cart-bar">
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-sm font-semibold" id="mobileCartCount">0 items</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="font-bold" id="mobileCartTotal">Rs. 0</span>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="login-overlay hidden" id="loginModal">
+    <div class="login-modal">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-lg font-semibold text-gray-900">Login to your account</h2>
+          <button onclick="closeLoginModal()" class="p-1 rounded-md hover:bg-gray-100 transition-colors">
+            <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+          </button>
+        </div>
+        <p class="text-sm text-gray-500 mb-4">Login with your Google account</p>
+        <button class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mb-4">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          <span class="text-sm font-medium text-gray-700">Login with Google</span>
+        </button>
+        <p class="text-xs text-gray-400 text-center mb-4">
+          By continuing, you agree to our <a href="#" class="text-blue-600 hover:underline">Privacy Policy</a>
+        </p>
+        <div class="border-t pt-4">
+          <p class="text-sm text-gray-500 text-center">
+            Don't have an account? <a href="#" class="text-blue-600 font-medium hover:underline">Sign up</a>
+          </p>
+        </div>
+      </div>
+      <div class="p-8 flex items-center justify-center" style="background: linear-gradient(135deg, #FEF9EC, #FDF0CC);">
+        <div class="text-center">
+          <img src="https://www.lootmart.com.pk/_next/image?url=%2Flogo-header-300x147.png&w=384&q=75" alt="LootMart" class="h-12 mx-auto mb-2 opacity-60"/>
+          <p class="text-xs opacity-60" style="color: #C4881C;">Get loot from your nearby marts!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Area Sheet -->
+  <div class="hidden" id="areaSheetOverlay">
+    <div class="sheet-overlay" onclick="closeAreaSheet()"></div>
+    <div class="sheet-content">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Choose delivery area</h3>
+        <button onclick="closeAreaSheet()" class="p-1 rounded-md hover:bg-gray-100">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
+      <p class="text-sm text-gray-500 mb-4">Select your location to see available stores</p>
+      <div class="space-y-2" id="areaSheetList"></div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Floating Button -->
+  <div class="fixed right-6 z-50 whatsapp-bubble" style="bottom: 24px;">
+    <button class="inline-flex items-center justify-center h-14 w-14 rounded-full shadow-lg text-white transition-all duration-300 hover:scale-110 p-0"
+      style="background: #22C55E;"
+      onmouseover="this.style.background='#16A34A'" onmouseout="this.style.background='#22C55E'"
+      aria-label="Open help chat">
+      <span class="flex h-full w-full items-center justify-center">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="h-full w-full" style="transform:scale(1.3)" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"></path>
+        </svg>
+      </span>
+    </button>
+  </div>
+
+  <script>
+    // ==================== DATA ====================
+    const areas = [
+      { id: 7, name: "Askari 14, Sector A/B", city: "Rawalpindi" },
+      { id: 8, name: "Askari 14, Sector D", city: "Rawalpindi" },
+      { id: 5, name: "Bahria Phase 8", city: "Rawalpindi" },
+      { id: 6, name: "DHA Phase 2", city: "Islamabad" },
+      { id: 2, name: "Sector F-7", city: "Islamabad" },
+      { id: 3, name: "Sector H-12", city: "Islamabad" },
+      { id: 4, name: "Sector H-13", city: "Islamabad" }
+    ];
+
+    const storesData = [
+      {
+        id: 24, name: "Hash Mart", slug: "hash-mart", store_type: "mart",
+        same_day_delivery: true, delivery_charges: 200, min_order_value: 100,
+        free_delivery_threshold: 500, areas: [5]
+      },
+      {
+        id: 22, name: "Royal Cash & Carry", slug: "royal-cash-and-carry", store_type: "mart",
+        same_day_delivery: true, delivery_charges: 100, min_order_value: 100,
+        free_delivery_threshold: 1000, areas: [2, 4]
+      }
+    ];
+
+    const categories = [
+      { id: 1, name: "Fresh", parent_id: null, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_30dc5596-3a29-4132-a083-b51a9e95c92f.jpg" },
+      { id: 9, name: "Snacks & Confectionary", parent_id: null, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_5582c913-ee5d-46b1-9533-394fa70f6011.jpg" },
+      { id: 28, name: "Beverages", parent_id: null, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_3e9657e6-ee60-46c6-9772-0e8689db9d90.jpg" },
+      { id: 42, name: "Tea & Coffee", parent_id: null, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_057703f8-7c7e-4022-ad25-2a22dfb61100.jpg" },
+      { id: 50, name: "Edible Grocery", parent_id: null, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_4b9dcad4-911a-49ec-9b04-97b127c6236e.jpg" },
+      // Subcategories
+      { id: 2, name: "Fruits & Vegetables", parent_id: 1, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_f1718125-708e-4fa4-b8a4-7a31a8c2fac0.jpg" },
+      { id: 6, name: "Meat & Poultry", parent_id: 1, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_2ca0fa56-cb66-4d9d-a286-f909662c9909.jpg" },
+      { id: 10, name: "Biscuits & Wafers", parent_id: 9, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_b373887b-441d-44f3-b667-6a5577a78253.jpg" },
+      { id: 14, name: "Cakes & Rusks", parent_id: 9, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_4bc87ad1-624c-47b4-b06e-ee7f6cb81b7c.jpg" },
+      { id: 17, name: "Chocolates", parent_id: 9, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_aa55a216-37b4-434b-9db0-d556402adf04.jpg" },
+      { id: 19, name: "Chewing Gums & Candies", parent_id: 9, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_ac722cce-bc31-4344-9437-8c05f5c77327.jpg" },
+      { id: 23, name: "Chips & Snacks", parent_id: 9, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_af4b589d-e80b-4019-b425-6be7ef3d5b13.jpg" },
+      { id: 29, name: "Carbonated Soft Drinks", parent_id: 28, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_c1c0375c-c1c1-47bf-a2ef-24783fbabac2.jpg" },
+      { id: 33, name: "Juices & Nectars", parent_id: 28, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_9613f829-2567-44ff-a51b-4b173e937836.jpg" },
+      { id: 35, name: "Make to Drink", parent_id: 28, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_15918822-30e4-4e8f-ab3c-586c2e11fc9a.jpg" },
+      { id: 40, name: "Water", parent_id: 28, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_d1c66c92-36f9-4c54-a104-6f94aa37a4b1.jpg" },
+      { id: 43, name: "Tea", parent_id: 42, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_0bd54a90-95a6-4e37-a54f-b09f2abafff5.jpg" },
+      { id: 46, name: "Coffee", parent_id: 42, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_46613ac6-00a0-491b-94eb-4135a3abef96.jpg" },
+      { id: 48, name: "Tea Whiteners", parent_id: 42, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_e70b8254-6c9d-4515-90eb-b550d27469ca.jpg" },
+      { id: 51, name: "Pulses & Grains", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_1300c02d-2509-47e4-b891-be3c7fb859f6.jpg" },
+      { id: 53, name: "Noodles & Pasta", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_9624f16d-7f26-43d0-8758-7b8554fe4f27.jpg" },
+      { id: 57, name: "Salt, Spices & Herbs", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_f0a45813-9e6f-40be-a49b-23e6e99c5b8c.jpg" },
+      { id: 63, name: "Cereals & Oats", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_28fcf1cb-3fd6-459b-a2cb-42e1f88cfc1d.jpg" },
+      { id: 65, name: "Edible Oil & Ghee", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_38011a6b-8def-47b3-9bca-75cdba272820.jpg" },
+      { id: 71, name: "Rice", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_5509f378-3492-4584-9147-2b0d9136ff93.jpg" },
+      { id: 73, name: "Flour", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_c78832ff-72fe-4dfd-8d97-a95029b732ba.jpg" },
+      { id: 76, name: "Sugar", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_decdd2b5-a45b-46d7-92ba-0571e0f855e3.jpg" },
+      { id: 78, name: "Dry Fruits", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_41176eb2-bf0c-437d-9027-6b1a6b842a3c.jpg" },
+      { id: 80, name: "Sauces, Dressings & Seasonings", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_404ecc7b-7e1f-41dc-acf5-d42234a24cf1.jpg" },
+      { id: 90, name: "Spreads", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_738f5e5c-45f4-4d59-a61a-0324894cd412.jpg" },
+      { id: 95, name: "Dessert", parent_id: 50, image: "https://dpgultbqxxdttrjcatco.supabase.co/storage/v1/object/public/loot-mart-public/category_e7078e0d-1e41-496b-99a7-63a0cda30827.jpg" },
+    ];
+
+    // Sample products data
+    const products = [
+      // Fresh > Fruits & Vegetables
+      { id: 101, name: "Fresh Tomatoes - Local", weight: "1 kg", price: 120, oldPrice: 150, category_id: 2, image: "https://images.unsplash.com/photo-1546470427-0d4db154ceb8?w=400&h=400&fit=crop" },
+      { id: 102, name: "Fresh Onions - Red", weight: "1 kg", price: 80, oldPrice: null, category_id: 2, image: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=400&h=400&fit=crop" },
+      { id: 103, name: "Potatoes - Local Fresh", weight: "1 kg", price: 90, oldPrice: 110, category_id: 2, image: "https://images.unsplash.com/photo-1518977676601-b53f82ber6c6?w=400&h=400&fit=crop" },
+      { id: 104, name: "Fresh Green Chili", weight: "250 g", price: 45, oldPrice: null, category_id: 2, image: "https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400&h=400&fit=crop" },
+      { id: 105, name: "Fresh Bananas", weight: "1 dozen", price: 150, oldPrice: 180, category_id: 2, image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&h=400&fit=crop" },
+      { id: 106, name: "Ginger Fresh", weight: "250 g", price: 60, oldPrice: null, category_id: 2, image: "https://images.unsplash.com/photo-1615485500704-8e990f9900e7?w=400&h=400&fit=crop" },
+      // Meat & Poultry
+      { id: 107, name: "Chicken Breast - Boneless", weight: "1 kg", price: 750, oldPrice: 850, category_id: 6, image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400&h=400&fit=crop" },
+      { id: 108, name: "Chicken Whole - Fresh", weight: "1 kg", price: 450, oldPrice: null, category_id: 6, image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=400&h=400&fit=crop" },
+      // Biscuits & Wafers 
+      { id: 201, name: "Oreo Original Biscuits", weight: "133 g", price: 120, oldPrice: null, category_id: 10, image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=400&h=400&fit=crop" },
+      { id: 202, name: "LU Prince Chocolate", weight: "95 g", price: 50, oldPrice: null, category_id: 10, image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&h=400&fit=crop" },
+      { id: 203, name: "EBM Sooper Biscuits", weight: "112 g", price: 40, oldPrice: 50, category_id: 10, image: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&h=400&fit=crop" },
+      // Cakes & Rusks
+      { id: 204, name: "Bisconni Cake Rusk", weight: "200 g", price: 180, oldPrice: null, category_id: 14, image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=400&fit=crop" },
+      // Chocolates
+      { id: 205, name: "Dairy Milk Chocolate", weight: "38 g", price: 100, oldPrice: null, category_id: 17, image: "https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&h=400&fit=crop" },
+      { id: 206, name: "KitKat 4 Finger", weight: "45 g", price: 120, oldPrice: 140, category_id: 17, image: "https://images.unsplash.com/photo-1582176604856-e824b4736522?w=400&h=400&fit=crop" },
+      { id: 207, name: "Snickers Bar", weight: "52 g", price: 150, oldPrice: null, category_id: 17, image: "https://images.unsplash.com/photo-1534604912917-ced47d48b0cb?w=400&h=400&fit=crop" },
+      // Chewing Gums & Candies
+      { id: 208, name: "Mentos Fresh Mint Roll", weight: "37 g", price: 50, oldPrice: null, category_id: 19, image: "https://images.unsplash.com/photo-1581798269146-2b94b0831a8e?w=400&h=400&fit=crop" },
+      // Chips & Snacks
+      { id: 209, name: "Lays Classic Salted", weight: "70 g", price: 80, oldPrice: null, category_id: 23, image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=400&fit=crop" },
+      { id: 210, name: "Kurkure Masala Munch", weight: "62 g", price: 50, oldPrice: null, category_id: 23, image: "https://images.unsplash.com/photo-1621447504864-d8686e12698c?w=400&h=400&fit=crop" },
+      { id: 211, name: "Pringles Original", weight: "165 g", price: 650, oldPrice: 750, category_id: 23, image: "https://images.unsplash.com/photo-1600952841320-db92ec4047ca?w=400&h=400&fit=crop" },
+      // Carbonated Soft Drinks
+      { id: 301, name: "Coca Cola Pet Bottle", weight: "1.5 L", price: 180, oldPrice: 200, category_id: 29, image: "https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=400&h=400&fit=crop" },
+      { id: 302, name: "Pepsi Can", weight: "330 ml", price: 100, oldPrice: null, category_id: 29, image: "https://images.unsplash.com/photo-1553456558-aff63285bdd1?w=400&h=400&fit=crop" },
+      { id: 303, name: "Sprite Regular", weight: "1.5 L", price: 180, oldPrice: null, category_id: 29, image: "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&h=400&fit=crop" },
+      { id: 304, name: "7UP Bottle", weight: "500 ml", price: 80, oldPrice: null, category_id: 29, image: "https://images.unsplash.com/photo-1581006852262-e4307cf6283a?w=400&h=400&fit=crop" },
+      // Juices
+      { id: 305, name: "Nestle Fruita Vitals Mango", weight: "1 L", price: 250, oldPrice: null, category_id: 33, image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=400&fit=crop" },
+      { id: 306, name: "Shezan Mango Juice", weight: "1 L", price: 220, oldPrice: 250, category_id: 33, image: "https://images.unsplash.com/photo-1546173159-315724a31696?w=400&h=400&fit=crop" },
+      // Make to Drink
+      { id: 307, name: "Tang Orange Powder", weight: "375 g", price: 280, oldPrice: 320, category_id: 35, image: "https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?w=400&h=400&fit=crop" },
+      // Water
+      { id: 308, name: "Nestle Pure Life Water", weight: "1.5 L", price: 80, oldPrice: null, category_id: 40, image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400&h=400&fit=crop" },
+      { id: 309, name: "Aquafina Water", weight: "500 ml", price: 50, oldPrice: null, category_id: 40, image: "https://images.unsplash.com/photo-1560023907-5f339617ea55?w=400&h=400&fit=crop" },
+      // Tea
+      { id: 401, name: "Tapal Danedar Tea", weight: "190 g", price: 350, oldPrice: 400, category_id: 43, image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop" },
+      { id: 402, name: "Lipton Yellow Label Tea", weight: "190 g", price: 340, oldPrice: null, category_id: 43, image: "https://images.unsplash.com/photo-1563911892437-1feda0179e1b?w=400&h=400&fit=crop" },
+      { id: 403, name: "Supreme Tea", weight: "190 g", price: 320, oldPrice: null, category_id: 43, image: "https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=400&h=400&fit=crop" },
+      // Coffee
+      { id: 404, name: "Nescafe Classic", weight: "100 g", price: 550, oldPrice: 650, category_id: 46, image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&h=400&fit=crop" },
+      { id: 405, name: "Nescafe 3-in-1", weight: "Pack of 30", price: 900, oldPrice: null, category_id: 46, image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=400&fit=crop" },
+      // Tea Whiteners
+      { id: 406, name: "Nestle Everyday Milk Powder", weight: "350 g", price: 420, oldPrice: 480, category_id: 48, image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=400&fit=crop" },
+      { id: 407, name: "Tarang Tea Whitener", weight: "200 ml", price: 60, oldPrice: null, category_id: 48, image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=400&fit=crop" },
+      // Pulses & Grains
+      { id: 501, name: "Chana Dal", weight: "1 kg", price: 280, oldPrice: null, category_id: 51, image: "https://images.unsplash.com/photo-1585155770913-5f63baf6c935?w=400&h=400&fit=crop" },
+      { id: 502, name: "Masoor Dal - Red Lentils", weight: "1 kg", price: 350, oldPrice: 400, category_id: 51, image: "https://images.unsplash.com/photo-1613758947307-f3b8f5d80711?w=400&h=400&fit=crop" },
+      // Noodles & Pasta
+      { id: 503, name: "Knorr Noodles Chatpata", weight: "66 g", price: 40, oldPrice: null, category_id: 53, image: "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=400&h=400&fit=crop" },
+      { id: 504, name: "Maggi Noodles", weight: "62 g", price: 35, oldPrice: null, category_id: 53, image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop" },
+      // Salt, Spices & Herbs
+      { id: 505, name: "National Red Chili Powder", weight: "200 g", price: 170, oldPrice: null, category_id: 57, image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=400&fit=crop" },
+      { id: 506, name: "Shan Biryani Masala", weight: "50 g", price: 80, oldPrice: null, category_id: 57, image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=400&fit=crop" },
+      { id: 507, name: "Turmeric Powder - Haldi", weight: "200 g", price: 120, oldPrice: 150, category_id: 57, image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400&h=400&fit=crop" },
+      // Edible Oil & Ghee
+      { id: 508, name: "Dalda Cooking Oil", weight: "5 L", price: 2200, oldPrice: 2500, category_id: 65, image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=400&fit=crop" },
+      { id: 509, name: "Sufi Sunflower Oil", weight: "3 L", price: 1450, oldPrice: null, category_id: 65, image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=400&fit=crop" },
+      // Rice
+      { id: 510, name: "Basmati Rice - Super Kernel", weight: "5 kg", price: 1200, oldPrice: 1400, category_id: 71, image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=400&fit=crop" },
+      { id: 511, name: "Guard Rice", weight: "1 kg", price: 300, oldPrice: null, category_id: 71, image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=400&fit=crop" },
+      // Flour
+      { id: 512, name: "Sunridge Atta", weight: "10 kg", price: 850, oldPrice: 950, category_id: 73, image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=400&fit=crop" },
+      // Sugar
+      { id: 513, name: "White Sugar", weight: "1 kg", price: 140, oldPrice: null, category_id: 76, image: "https://images.unsplash.com/photo-1581268314921-d09b07a0c86a?w=400&h=400&fit=crop" },
+      // Sauces
+      { id: 514, name: "National Tomato Ketchup", weight: "400 g", price: 180, oldPrice: 210, category_id: 80, image: "https://images.unsplash.com/photo-1592921870789-04563d55041c?w=400&h=400&fit=crop" },
+      { id: 515, name: "Knorr Chilli Garlic Sauce", weight: "800 g", price: 350, oldPrice: null, category_id: 80, image: "https://images.unsplash.com/photo-1592921870789-04563d55041c?w=400&h=400&fit=crop" },
+      // Spreads
+      { id: 516, name: "Nutella Hazelnut Spread", weight: "350 g", price: 1200, oldPrice: 1400, category_id: 90, image: "https://images.unsplash.com/photo-1530016555861-2834a138e921?w=400&h=400&fit=crop" },
+      // Dessert
+      { id: 517, name: "Rafhan Custard Powder", weight: "300 g", price: 200, oldPrice: null, category_id: 95, image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=400&fit=crop" },
+      // Cereals & Oats
+      { id: 518, name: "Quaker Oats", weight: "400 g", price: 450, oldPrice: 520, category_id: 63, image: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&h=400&fit=crop" },
+      // Dry Fruits
+      { id: 519, name: "Almonds - Premium", weight: "250 g", price: 850, oldPrice: null, category_id: 78, image: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&h=400&fit=crop" },
+      { id: 520, name: "Cashew Nuts", weight: "250 g", price: 750, oldPrice: 900, category_id: 78, image: "https://images.unsplash.com/photo-1563635529383-1e70ae19b0de?w=400&h=400&fit=crop" },
+    ];
+
+    // ==================== STATE ====================
+    let currentStore = null;
+    let currentArea = null;
+    let selectedCategoryId = null;
+    let selectedSubcategoryId = null;
+    let cart = {};
+    let searchQuery = '';
+    let locationDropdownOpen = false;
+
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      parseUrlParams();
+      populateSidebar();
+      populateMobileCategories();
+      populateLocationDropdown();
+      populateAreaSheet();
+      renderProducts();
+      updateCartUI();
+    });
+
+    function parseUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      const storeSlug = params.get('store') || 'royal-cash-and-carry';
+      const areaName = params.get('area') || 'Sector F-7';
+
+      currentStore = storesData.find(s => s.slug === storeSlug) || storesData[1];
+      currentArea = areas.find(a => a.name === areaName) || areas[4];
+
+      // Update header
+      document.getElementById('selectedAreaDesktop').textContent = currentArea.name;
+      document.getElementById('mobileAreaLabel').textContent = currentArea.name;
+      document.getElementById('mobileStoreLabel').textContent = currentStore.name;
+      document.title = `LootMart - ${currentStore.name}`;
+
+      // Update store info bar
+      document.getElementById('storeInfoBar').classList.remove('hidden');
+      document.getElementById('deliveryChargeInfo').textContent = `Rs. ${currentStore.delivery_charges}`;
+      document.getElementById('minOrderInfo').textContent = `Rs. ${currentStore.min_order_value}`;
+      document.getElementById('freeDeliveryInfo').textContent = `Rs. ${currentStore.free_delivery_threshold.toLocaleString()}`;
+    }
+
+    // ==================== CATEGORIES ====================
+    function populateSidebar() {
+      const parentCategories = categories.filter(c => c.parent_id === null);
+      const container = document.getElementById('categorySidebarList');
+
+      // "All" option
+      let html = `
+        <div class="category-item active" onclick="selectCategory(null)" id="cat-all">
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#F3F4F6;">
+            <i data-lucide="grid-2x2" class="w-4 h-4 text-gray-500"></i>
+          </div>
+          <span>All Products</span>
+        </div>
+      `;
+
+      parentCategories.forEach(cat => {
+        const subcats = categories.filter(c => c.parent_id === cat.id);
+        html += `
+          <div class="category-item" onclick="selectCategory(${cat.id})" id="cat-${cat.id}">
+            <img src="${cat.image}" alt="${cat.name}" loading="lazy"/>
+            <span>${cat.name}</span>
+          </div>
+        `;
+        // Subcategories (hidden initially, shown when parent selected)
+        subcats.forEach(sub => {
+          html += `
+            <div class="category-item hidden pl-10" id="subcat-sidebar-${sub.id}" data-parent="${cat.id}" onclick="selectSubcategory(${sub.id}, ${cat.id})">
+              <img src="${sub.image}" alt="${sub.name}" loading="lazy" style="width:28px;height:28px;border-radius:6px;"/>
+              <span class="text-xs">${sub.name}</span>
+            </div>
+          `;
+        });
+      });
+
+      container.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function populateMobileCategories() {
+      const parentCategories = categories.filter(c => c.parent_id === null);
+      const container = document.getElementById('mobileCategoryBar');
+
+      let html = `
+        <button class="subcategory-chip active" onclick="selectCategory(null)" id="mcat-all">All</button>
+      `;
+      parentCategories.forEach(cat => {
+        html += `
+          <button class="subcategory-chip" onclick="selectCategory(${cat.id})" id="mcat-${cat.id}">
+            <img src="${cat.image}" alt="" class="w-5 h-5 rounded mr-1.5" loading="lazy"/>
+            ${cat.name}
+          </button>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function selectCategory(catId) {
+      selectedCategoryId = catId;
+      selectedSubcategoryId = null;
+      searchQuery = '';
+
+      // Update sidebar active states
+      document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('[id^="subcat-sidebar-"]').forEach(el => el.classList.add('hidden'));
+
+      if (catId === null) {
+        document.getElementById('cat-all').classList.add('active');
+      } else {
+        const el = document.getElementById(`cat-${catId}`);
+        if (el) el.classList.add('active');
+        // Show subcategories
+        document.querySelectorAll(`[data-parent="${catId}"]`).forEach(el => el.classList.remove('hidden'));
+      }
+
+      // Update mobile chips
+      document.querySelectorAll('#mobileCategoryBar .subcategory-chip').forEach(el => el.classList.remove('active'));
+      if (catId === null) {
+        document.getElementById('mcat-all')?.classList.add('active');
+      } else {
+        document.getElementById(`mcat-${catId}`)?.classList.add('active');
+      }
+
+      // Show subcategory bar
+      showSubcategoryChips(catId);
+      renderProducts();
+    }
+
+    function selectSubcategory(subId, parentId) {
+      selectedSubcategoryId = subId;
+
+      // Update sidebar
+      document.querySelectorAll('[id^="subcat-sidebar-"]').forEach(el => el.classList.remove('active'));
+      const el = document.getElementById(`subcat-sidebar-${subId}`);
+      if (el) el.classList.add('active');
+
+      // Update chips
+      document.querySelectorAll('#subcategoryChips .subcategory-chip').forEach(ch => ch.classList.remove('active'));
+      const chip = document.getElementById(`schip-${subId}`);
+      if (chip) chip.classList.add('active');
+      const allChip = document.getElementById('schip-all');
+      if (allChip) allChip.classList.remove('active');
+
+      renderProducts();
+    }
+
+    function showSubcategoryChips(parentId) {
+      const bar = document.getElementById('subcategoryBar');
+      const container = document.getElementById('subcategoryChips');
+
+      if (!parentId) {
+        bar.classList.add('hidden');
+        return;
+      }
+
+      const subcats = categories.filter(c => c.parent_id === parentId);
+      if (subcats.length === 0) {
+        bar.classList.add('hidden');
+        return;
+      }
+
+      bar.classList.remove('hidden');
+      let html = `<button class="subcategory-chip active" onclick="selectSubcategory(null, ${parentId}); this.classList.add('active'); document.querySelectorAll('#subcategoryChips .subcategory-chip').forEach(c => { if(c !== this) c.classList.remove('active'); });" id="schip-all">All</button>`;
+      subcats.forEach(sub => {
+        html += `<button class="subcategory-chip" onclick="selectSubcategory(${sub.id}, ${parentId})" id="schip-${sub.id}">${sub.name}</button>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // ==================== PRODUCTS ====================
+    function getFilteredProducts() {
+      let filtered = [...products];
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+      } else if (selectedSubcategoryId) {
+        filtered = filtered.filter(p => p.category_id === selectedSubcategoryId);
+      } else if (selectedCategoryId) {
+        const subcatIds = categories.filter(c => c.parent_id === selectedCategoryId).map(c => c.id);
+        filtered = filtered.filter(p => subcatIds.includes(p.category_id));
+      }
+
+      return filtered;
+    }
+
+    function renderProducts() {
+      const filtered = getFilteredProducts();
+      const grid = document.getElementById('productsGrid');
+      const emptyState = document.getElementById('emptyState');
+      const countEl = document.getElementById('productCount');
+      const titleEl = document.getElementById('categoryTitle');
+
+      if (searchQuery) {
+        titleEl.textContent = `Search results for "${searchQuery}"`;
+      } else if (selectedSubcategoryId) {
+        const sub = categories.find(c => c.id === selectedSubcategoryId);
+        titleEl.textContent = sub ? sub.name : 'Products';
+      } else if (selectedCategoryId) {
+        const cat = categories.find(c => c.id === selectedCategoryId);
+        titleEl.textContent = cat ? cat.name : 'Products';
+      } else {
+        titleEl.textContent = 'All Products';
+      }
+
+      countEl.textContent = `${filtered.length} product${filtered.length !== 1 ? 's' : ''}`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        lucide.createIcons();
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(p => {
+        const qty = cart[p.id] || 0;
+        const discount = p.oldPrice ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : 0;
+
+        return `
+          <div class="product-card" id="product-${p.id}">
+            <div class="product-image-wrap">
+              ${discount > 0 ? `<div class="absolute top-2 left-2 z-10"><span class="product-discount">-${discount}%</span></div>` : ''}
+              <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23f3f4f6%22 width=%22400%22 height=%22400%22/><text x=%22200%22 y=%22200%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239ca3af%22 font-size=%2240%22>No Image</text></svg>'"/>
+            </div>
+            <div class="product-info">
+              <div class="product-name">${p.name}</div>
+              <div class="product-weight">${p.weight}</div>
+              <div class="product-price-row">
+                <div>
+                  <span class="product-price">Rs. ${p.price.toLocaleString()}</span>
+                  ${p.oldPrice ? `<span class="product-old-price">Rs. ${p.oldPrice.toLocaleString()}</span>` : ''}
+                </div>
+                ${qty === 0 ? `
+                  <button class="add-to-cart-btn" onclick="addToCart(${p.id})" aria-label="Add to cart">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                ` : `
+                  <div class="qty-control">
+                    <button class="qty-btn" onclick="decrementCart(${p.id})">−</button>
+                    <span class="qty-value">${qty}</span>
+                    <button class="qty-btn" onclick="addToCart(${p.id})">+</button>
+                  </div>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== SEARCH ====================
+    let searchTimeout;
+    function handleSearch(value) {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        searchQuery = value.trim();
+        if (searchQuery) {
+          selectedCategoryId = null;
+          selectedSubcategoryId = null;
+          document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active'));
+          document.querySelectorAll('#mobileCategoryBar .subcategory-chip').forEach(el => el.classList.remove('active'));
+          document.getElementById('subcategoryBar').classList.add('hidden');
+        }
+        renderProducts();
+      }, 300);
+    }
+
+    // ==================== CART ====================
+    function addToCart(productId) {
+      cart[productId] = (cart[productId] || 0) + 1;
+      renderProducts();
+      updateCartUI();
+    }
+
+    function decrementCart(productId) {
+      if (cart[productId] > 1) {
+        cart[productId]--;
+      } else {
+        delete cart[productId];
+      }
+      renderProducts();
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
+      const subtotal = Object.entries(cart).reduce((total, [id, qty]) => {
+        const product = products.find(p => p.id === parseInt(id));
+        return total + (product ? product.price * qty : 0);
+      }, 0);
+
+      const delivery = totalItems > 0 ? (subtotal >= (currentStore?.free_delivery_threshold || 1000) ? 0 : (currentStore?.delivery_charges || 100)) : 0;
+      const total = subtotal + delivery;
+
+      // Desktop badge
+      const desktopBadge = document.getElementById('cartBadgeDesktop');
+      const mobileBadge = document.getElementById('cartBadgeMobile');
+      if (totalItems > 0) {
+        desktopBadge.classList.remove('hidden');
+        desktopBadge.textContent = totalItems;
+        mobileBadge.classList.remove('hidden');
+        mobileBadge.textContent = totalItems;
+      } else {
+        desktopBadge.classList.add('hidden');
+        mobileBadge.classList.add('hidden');
+      }
+
+      // Cart sidebar
+      document.getElementById('cartItemCount').textContent = `(${totalItems} item${totalItems !== 1 ? 's' : ''})`;
+      document.getElementById('cartSubtotal').textContent = `Rs. ${subtotal.toLocaleString()}`;
+      document.getElementById('cartDelivery').textContent = delivery === 0 && totalItems > 0 ? 'FREE' : `Rs. ${delivery.toLocaleString()}`;
+      document.getElementById('cartTotal').textContent = `Rs. ${total.toLocaleString()}`;
+
+      // Cart items
+      const cartItemsEl = document.getElementById('cartItems');
+      const emptyCartView = document.getElementById('emptyCartView');
+
+      if (totalItems === 0) {
+        emptyCartView.classList.remove('hidden');
+        emptyCartView.style.display = '';
+      } else {
+        emptyCartView.classList.add('hidden');
+        emptyCartView.style.display = 'none';
+
+        let cartHtml = '';
+        Object.entries(cart).forEach(([id, qty]) => {
+          const p = products.find(pr => pr.id === parseInt(id));
+          if (!p) return;
+          cartHtml += `
+            <div class="flex items-center gap-3 py-3 border-b" style="border-color: #F3F4F6;">
+              <img src="${p.image}" alt="${p.name}" class="w-14 h-14 rounded-lg object-cover flex-shrink-0" 
+                onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f3f4f6%22 width=%22100%22 height=%22100%22/></svg>'"/>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-gray-900 truncate">${p.name}</div>
+                <div class="text-xs text-gray-500">${p.weight}</div>
+                <div class="text-sm font-semibold mt-1">Rs. ${(p.price * qty).toLocaleString()}</div>
+              </div>
+              <div class="qty-control flex-shrink-0">
+                <button class="qty-btn" onclick="decrementCart(${p.id})">−</button>
+                <span class="qty-value">${qty}</span>
+                <button class="qty-btn" onclick="addToCart(${p.id})">+</button>
+              </div>
+            </div>
+          `;
+        });
+
+        // Insert before the empty cart view
+        const existingItems = cartItemsEl.querySelectorAll('.flex.items-center.gap-3');
+        existingItems.forEach(el => el.remove());
+        emptyCartView.insertAdjacentHTML('beforebegin', cartHtml);
+      }
+
+      // Mobile cart bar
+      const mobileBar = document.getElementById('mobileCartBar');
+      if (totalItems > 0) {
+        mobileBar.classList.remove('hidden');
+        document.getElementById('mobileCartCount').textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+        document.getElementById('mobileCartTotal').textContent = `Rs. ${total.toLocaleString()}`;
+      } else {
+        mobileBar.classList.add('hidden');
+      }
+    }
+
+    function toggleCart() {
+      const wrapper = document.getElementById('cartWrapper');
+      if (wrapper.classList.contains('hidden')) {
+        wrapper.classList.remove('hidden');
+        updateCartUI();
+      } else {
+        wrapper.classList.add('hidden');
+      }
+    }
+
+    // ==================== MODALS ====================
+    function showLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+    function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+    function showAreaSheet() { document.getElementById('areaSheetOverlay').classList.remove('hidden'); }
+    function closeAreaSheet() { document.getElementById('areaSheetOverlay').classList.add('hidden'); }
+
+    function populateLocationDropdown() {
+      const container = document.getElementById('locationDropdown');
+      container.innerHTML = areas.map(a => `
+        <div class="select-option${currentArea && currentArea.id === a.id ? ' active' : ''}" onclick="changeArea(${a.id})">
+          <div class="font-medium text-sm">${a.name}</div>
+          <div class="text-xs text-gray-500">${a.city}</div>
+        </div>
+      `).join('');
+    }
+
+    function populateAreaSheet() {
+      const container = document.getElementById('areaSheetList');
+      container.innerHTML = areas.map(a => `
+        <div class="area-card" onclick="changeArea(${a.id}); closeAreaSheet();">
+          <div class="font-medium text-sm text-gray-900">${a.name}</div>
+          <div class="text-xs text-gray-500 mt-0.5">${a.city}</div>
+        </div>
+      `).join('');
+    }
+
+    function changeArea(areaId) {
+      window.location.href = `index.html`;
+    }
+
+    function toggleLocationDropdown() {
+      const dropdown = document.getElementById('locationDropdown');
+      locationDropdownOpen = !locationDropdownOpen;
+      dropdown.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const locSelect = document.getElementById('locationSelectDesktop');
+      if (locSelect && !locSelect.contains(e.target) && locationDropdownOpen) {
+        locationDropdownOpen = false;
+        document.getElementById('locationDropdown').classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
