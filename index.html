@@ -312,8 +312,8 @@
               <div class="flex items-center gap-2 text-left">
                 <i data-lucide="map-pin" class="w-4 h-4 text-gray-600 flex-shrink-0"></i>
                 <div class="flex flex-col min-w-0">
-                  <span class="text-xs text-gray-500">Location</span>
-                  <span class="text-sm truncate" id="selectedAreaDesktop">Select area</span>
+                  <span class="text-xs text-gray-500">Deliver to</span>
+                  <span class="text-sm font-medium truncate" id="selectedAreaDesktop">Select area</span>
                 </div>
               </div>
               <i data-lucide="chevron-down" class="w-4 h-4 opacity-50"></i>
@@ -375,30 +375,18 @@
         <h1 class="text-2xl md:text-3xl font-bold text-foreground mb-4">Welcome to</h1>
         <!-- LootMart Big Logo -->
         <div class="flex items-center justify-center gap-3 mb-3">
-          <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center"
-            style="background: #E5A528;">
-            <svg class="w-10 h-10 md:w-12 md:h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-              <path d="M3 6h18" />
-              <path d="M16 10a4 4 0 0 1-8 0" />
-              <path d="M12 6v6" />
-              <path d="M9 13l3 3 3-3" />
-            </svg>
-          </div>
-          <div class="text-left">
-            <span class="text-4xl md:text-5xl font-bold" style="color: #1E2A3B;">Loot</span><br>
-            <span class="text-4xl md:text-5xl font-bold" style="color: #1E2A3B;">Mart</span>
-          </div>
+          <img src="https://www.lootmart.com.pk/_next/image?url=%2Flogo-header-300x147.png&w=384&q=75" alt="LootMart"
+            class="h-20 md:h-28 w-auto" />
         </div>
         <p class="text-gray-500 text-sm md:text-base mb-6">Your one-stop shop for convenient grocery delivery</p>
 
         <!-- Select your area button -->
-        <button
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 bg-white text-sm text-gray-700 hover:border-primary-500 hover:bg-primary-50 transition-all shadow-sm"
+        <button id="areaSelectBtn"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-sm border border-gray-200 bg-white text-gray-700 hover:border-primary hover:bg-primary-50"
           onclick="showAreaModal()">
-          <i data-lucide="map-pin" class="w-4 h-4 text-gray-500"></i>
-          <span>Select your area</span>
+          <i data-lucide="map-pin" class="w-4 h-4"></i>
+          <span id="areaBtnLabel">Select your area</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
         </button>
       </div>
 
@@ -421,7 +409,7 @@
           </div>
           <div>
             <div class="font-semibold text-sm text-gray-900">Free Delivery</div>
-            <div class="text-xs text-gray-500">For free orders</div>
+            <div class="text-xs text-gray-500">On free orders</div>
           </div>
         </div>
         <div class="feature-card">
@@ -480,10 +468,11 @@
         </button>
       </div>
 
-      <!-- All Stores Section -->
+      <!-- Stores Section -->
       <div class="text-center mb-6">
-        <h2 class="text-xl md:text-2xl font-bold text-gray-900 mb-1">All Stores</h2>
-        <p class="text-sm text-gray-500">Browse all available stores</p>
+        <h2 class="text-xl md:text-2xl font-bold text-gray-900 mb-1" id="storesSectionTitle">Stores in <span
+            class="text-primary">your area</span></h2>
+        <p class="text-sm text-gray-500" id="storesSectionSub">Select an area to see available stores</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto" id="allStoresGrid">
@@ -686,23 +675,52 @@
       if (!area) return;
       selectedArea = area;
 
+      // Update header
       document.getElementById('selectedAreaDesktop').textContent = area.name;
       document.getElementById('mobileAreaLabel').textContent = area.name;
       document.getElementById('locationBtn').disabled = false;
       document.getElementById('storeSelectBtn').disabled = false;
 
+      // Update area button to golden pill style
+      const areaBtn = document.getElementById('areaSelectBtn');
+      areaBtn.className = 'inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-sm border-none text-white';
+      areaBtn.style.background = '#E5A528';
+      document.getElementById('areaBtnLabel').textContent = area.name;
+
+      // Update stores section
+      const matchingStores = stores.filter(s => s.areas.includes(areaId));
+      document.getElementById('storesSectionTitle').innerHTML = `Stores in <span class="font-bold" style="color:#1a3a5c">${area.name}</span>`;
+      document.getElementById('storesSectionSub').textContent = `${matchingStores.length} store${matchingStores.length !== 1 ? 's' : ''} deliver${matchingStores.length === 1 ? 's' : ''} to your area`;
+
+      // Update store grid to only show matching stores with area in link
+      const container = document.getElementById('allStoresGrid');
+      const displayStores = matchingStores.length > 0 ? matchingStores : stores;
+      container.innerHTML = displayStores.map(s => `
+        <a href="store.html?store=${s.slug}&area=${encodeURIComponent(area.name)}" class="store-card">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background: #FEF9EC;">
+              <i data-lucide="store" class="w-6 h-6" style="color: #E5A528;"></i>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-900">${s.name}</div>
+              <div class="text-xs text-gray-500">${s.store_type === 'mart' ? 'Grocery Mart' : s.store_type}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-500 border-t border-gray-100 pt-3">
+            ${s.same_day_delivery ? '<span class="flex items-center gap-1 text-green-600"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Same-day</span><span class="text-gray-300">|</span>' : ''}
+            <span>Delivery: Rs. ${s.delivery_charges}</span>
+            <span class="text-gray-300">|</span>
+            <span>Free over Rs. ${s.free_delivery_threshold}</span>
+          </div>
+        </a>
+      `).join('');
+      lucide.createIcons();
+
       closeAreaModal();
       closeLocationDropdown();
 
-      // Find matching stores
-      const matchingStores = stores.filter(s => s.areas.includes(areaId));
-
-      if (matchingStores.length === 1) {
-        window.location.href = `store.html?store=${matchingStores[0].slug}&area=${encodeURIComponent(area.name)}`;
-      } else if (matchingStores.length > 1) {
-        // Scroll to stores section and highlight matching stores
-        document.getElementById('allStoresGrid').scrollIntoView({ behavior: 'smooth' });
-      }
+      // Scroll to stores section
+      document.getElementById('storesSectionTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // ==================== MODALS ====================
