@@ -58,6 +58,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         },
     },
     // Enable JWT strategy (serverless-friendly, no DB needed)
+    trustHost: true,
+    secret:
+        process.env.AUTH_SECRET ||
+        process.env.NEXTAUTH_SECRET ||
+        "lootmart-demo-fallback-secret-change-in-production",
     session: {
         strategy: "jwt",
         maxAge: 30 * 24 * 60 * 60, // 30 days

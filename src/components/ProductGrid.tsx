@@ -64,10 +64,11 @@ export default function ProductGrid({ initialProducts, storeSlug, searchQuery }:
     const loadMore = useCallback(() => {
         if (loadingRef.current || !state.hasMore || state.cursor === null) return;
         loadingRef.current = true;
+        const currentCursor = state.cursor;
 
         startTransition(async () => {
             try {
-                const data = await fetchProducts(state.cursor);
+                const data = await fetchProducts(currentCursor);
 
                 // Optimistic UI update — show products in view immediately
                 addOptimisticProducts(data.products);
