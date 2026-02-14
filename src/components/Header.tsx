@@ -75,7 +75,6 @@ export default function Header({
                     <div className="hidden md:flex flex-1 justify-center min-w-0 mx-4">
                         {variant === "store" && storeName && (
                             <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-500">Now viewing</span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold text-white text-xs" style={{ background: "#1a3a5c" }}>
                                     <Store className="w-3.5 h-3.5" />
                                     <span>{storeName}</span>
@@ -215,7 +214,10 @@ export default function Header({
                                 <ChevronDown className="w-3 h-3" />
                             </button>
                             <span className="text-gray-300">&bull;</span>
-                            <button className="flex items-center gap-1.5 text-xs hover:text-blue-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button
+                                disabled
+                                className="flex items-center gap-1.5 text-xs hover:text-blue-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 <Store className="w-3.5 h-3.5 text-blue-600" />
                                 <span className="font-medium text-blue-900">Select store</span>
                                 <ChevronDown className="w-3 h-3 text-blue-600" />
@@ -262,14 +264,14 @@ export default function Header({
                                 </p>
                             </div>
                         </div>
-                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-8 flex items-center justify-center">
+                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 flex items-center justify-center">
                             <div className="text-center">
                                 <Image
                                     src="https://www.lootmart.com.pk/_next/image?url=%2Flogo-header-300x147.png&w=384&q=75"
                                     alt="LootMart"
                                     width={150}
                                     height={73}
-                                    className="h-12 mx-auto mb-2 opacity-60"
+                                    className="h-10 mx-auto mb-1 opacity-60"
                                 />
                                 <p className="text-xs text-amber-700 opacity-60">Get loot from your nearby marts!</p>
                             </div>

@@ -18,6 +18,8 @@ interface HomeClientProps {
     stores: StoreType[];
 }
 
+const AREA_MODAL_SEEN_KEY = "lootmart-area-modal-seen";
+
 export default function HomeClient({ areas, stores }: HomeClientProps) {
     const { selectedArea, setArea } = useAreaStore();
     const { data: session } = useSession();
@@ -29,15 +31,24 @@ export default function HomeClient({ areas, stores }: HomeClientProps) {
 
     // Hydration safety
     useEffect(() => {
-        setMounted(true);
+        const raf = window.requestAnimationFrame(() => {
+            setMounted(true);
+
+            const hasSeenAreaModal = window.localStorage.getItem(AREA_MODAL_SEEN_KEY) === "true";
+            if (!hasSeenAreaModal) {
+                window.setTimeout(() => {
+                    setShowAreaModal(true);
+                }, 0);
+            }
+        });
+
+        return () => window.cancelAnimationFrame(raf);
     }, []);
 
-    // Auto-show area modal on first visit
-    useEffect(() => {
-        if (mounted && !selectedArea) {
-            setShowAreaModal(true);
-        }
-    }, [mounted, selectedArea]);
+    const closeAreaModal = useCallback(() => {
+        setShowAreaModal(false);
+        window.localStorage.setItem(AREA_MODAL_SEEN_KEY, "true");
+    }, []);
 
     // Filter stores when area changes (wrapped in useTransition)
     useEffect(() => {
@@ -56,6 +67,7 @@ export default function HomeClient({ areas, stores }: HomeClientProps) {
             startTransition(() => {
                 setArea(area);
                 setShowAreaModal(false);
+                window.localStorage.setItem(AREA_MODAL_SEEN_KEY, "true");
                 setTimeout(() => {
                     document.getElementById("stores-section")?.scrollIntoView({ behavior: "smooth" });
                 }, 100);
@@ -94,8 +106,8 @@ export default function HomeClient({ areas, stores }: HomeClientProps) {
                         {/* Select area button */}
                         <button
                             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-sm ${mounted && selectedArea
-                                    ? "border-none text-white animate-pulse-glow"
-                                    : "border border-gray-200 bg-white text-gray-700 hover:shadow-md"
+                                    ? "border-none text-white"
+                                    : "border border-gray-200 bg-white text-gray-700 hover:border-[#E5A528] hover:bg-[#FEF9EC]"
                                 }`}
                             style={
                                 mounted && selectedArea
@@ -234,12 +246,12 @@ export default function HomeClient({ areas, stores }: HomeClientProps) {
 
             {/* Area Selection Modal */}
             {showAreaModal && (
-                <div className="modal-overlay" onClick={() => setShowAreaModal(false)}>
+                <div className="modal-overlay" onClick={closeAreaModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-1">
                             <h2 className="text-lg font-semibold text-gray-900">Choose delivery area</h2>
                             <button
-                                onClick={() => setShowAreaModal(false)}
+                                onClick={closeAreaModal}
                                 className="p-1 rounded-md hover:bg-gray-100 transition-colors"
                             >
                                 <X className="w-5 h-5 text-gray-400" />

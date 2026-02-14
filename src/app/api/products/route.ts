@@ -6,12 +6,13 @@ export const revalidate = 300;
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
-    const storeSlug = searchParams.get("storeSlug");
+    const storeSlug = searchParams.get("storeSlug") ?? searchParams.get("store");
     const cursor = searchParams.get("cursor");
     const limit = parseInt(searchParams.get("limit") || "8");
     const search = searchParams.get("search")?.toLowerCase();
     const categoryId = searchParams.get("categoryId");
     const inStockOnly = searchParams.get("inStockOnly") !== "false";
+    const sortBy = searchParams.get("sortBy") || "relevance";
 
     // Simulate server processing delay for realism
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -40,19 +41,49 @@ export async function GET(request: NextRequest) {
         filtered = filtered.filter((p) => p.in_stock);
     }
 
-    // Cursor-based pagination
+    // Sorting
+    if (sortBy === "price-asc") {
+        filtered.sort((a, b) => a.price - b.price);
+    } else if (sortBy === "price-desc") {
+        filtered.sort((a, b) => b.price - a.price);
+    } else if (sortBy === "name-asc") {
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // Cursor-based pagination (cursor is an index offset)
     let startIndex = 0;
     if (cursor) {
-        const cursorId = parseInt(cursor);
-        const cursorIndex = filtered.findIndex((p) => p.id === cursorId);
-        if (cursorIndex !== -1) {
-            startIndex = cursorIndex + 1;
+        const parsedCursor = parseInt(cursor);
+        if (!Number.isNaN(parsedCursor) && parsedCursor >= 0) {
+            startIndex = parsedCursor;
         }
     }
 
-    const paginatedProducts = filtered.slice(startIndex, startIndex + limit);
-    const hasMore = startIndex + limit < filtered.length;
-    const nextCursor = hasMore ? paginatedProducts[paginatedProducts.length - 1]?.id : null;
+    if (filtered.length === 0) {
+        return NextResponse.json(
+            {
+                products: [],
+                nextCursor: null,
+                hasMore: false,
+                total: 0,
+            },
+            {
+                status: 200,
+                headers: {
+                    "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+                    "Vercel-CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+                },
+            }
+        );
+    }
+
+    // Demo mode: cycle sample items infinitely while moving cursor forward
+    const paginatedProducts = Array.from({ length: limit }, (_, i) => {
+        const idx = (startIndex + i) % filtered.length;
+        return filtered[idx];
+    });
+    const hasMore = true;
+    const nextCursor = startIndex + limit;
 
     return NextResponse.json(
         {

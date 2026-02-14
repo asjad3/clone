@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LootMart Clone (Next.js 16)
 
-## Getting Started
+This project is a functional and visual clone of lootmart.com.pk, implemented with the App Router and modern Next.js patterns.
 
-First, run the development server:
+## What was improved in this iteration
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Visual and UX alignment
+- Added store welcome section + availability pill to match store-page structure.
+- Added featured section action label (`Popular Picks`) like the reference flow.
+- Added product toolbar controls:
+	- category chips,
+	- in-stock toggle,
+	- sort selector,
+	- grid/list view toggle.
+- Added list-view layout styling for product cards.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Functional fixes and upgrades
+- Fixed API/client mismatch for product store filtering (`storeSlug` vs `store`).
+- Fixed cursor logic to use offset-based pagination consistently.
+- Added API sort handling (`relevance`, `price-asc`, `price-desc`, `name-asc`).
+- Kept infinite scroll via `IntersectionObserver` and added manual `Load more` fallback.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Advanced Next.js techniques used
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Rendering and routing
+- App Router with nested segments.
+- Dynamic routes for stores: `store/[slug]`.
+- API routes in `app/api/**`.
+- `generateStaticParams()` for store pre-generation.
+- Segment-level ISR via `export const revalidate`.
 
-## Learn More
+### Caching and revalidation
+- `unstable_cache()` for server-side cached data in [src/lib/cache.ts](src/lib/cache.ts).
+- Cache tags (`products`, `stores`, `areas`) and tag/path revalidation in [src/app/actions.ts](src/app/actions.ts).
+- HTTP cache headers on API routes (`s-maxage`, `stale-while-revalidate`).
 
-To learn more about Next.js, take a look at the following resources:
+### Data loading patterns
+- Parallel server fetches with `Promise.all()`.
+- Cursor pagination over API for product catalog.
+- Infinite scroll using `IntersectionObserver` in [src/components/ProductGrid.tsx](src/components/ProductGrid.tsx).
+- Optimistic UI updates with `useOptimistic()` for smoother incremental loading.
+- Concurrent UI updates with `useTransition()`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Performance and UX
+- Dynamic import/code splitting for page clients (`dynamic()` with loading fallback).
+- Image optimization via `next/image`.
+- Prefetching via `next/link` for store navigation.
+- Debounced search input.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### SEO and metadata
+- Route metadata and dynamic metadata (`generateMetadata`).
+- OpenGraph/Twitter metadata.
+- JSON-LD structured data for the homepage.
 
-## Deploy on Vercel
+### State architecture
+- Persisted client state with Zustand for area and cart.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Run locally
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. `npm install`
+2. `npm run dev`
+3. Open `http://localhost:3000`
+
+## Notes on parity
+
+This clone is now significantly closer in layout and behavior. For final pixel-level parity, run side-by-side screenshot QA on desktop/mobile across home, area modal, store listing, search/filter states, and cart states.

@@ -43,7 +43,7 @@ export default function SearchBar({ storeName, onSearch }: SearchBarProps) {
             <h2 className="text-lg font-bold text-gray-900 mb-3">
                 Find products quickly in <span>{storeName}</span>
             </h2>
-            <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 mb-4 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/10 transition-all">
+            <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 mb-4 focus-within:border-[#E5A528] focus-within:ring-2 focus-within:ring-[#E5A528]/10 transition-all">
                 <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 <input
                     type="text"
