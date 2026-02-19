@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Product } from "@/types";
+import { Product, Order } from "@/types";
 
 interface CartItem {
     product: Product;
@@ -11,11 +11,13 @@ interface CartItem {
 
 interface CartState {
     items: Record<number, CartItem>;
+    pendingReviewOrder: Order | null;
     // Actions
     addItem: (product: Product) => void;
     removeItem: (productId: number) => void;
     decrementItem: (productId: number) => void;
     clearCart: () => void;
+    setPendingReviewOrder: (order: Order | null) => void;
     // Computed
     getTotalItems: () => number;
     getSubtotal: () => number;
@@ -28,6 +30,7 @@ export const useCartStore = create<CartState>()(
     persist(
         (set, get) => ({
             items: {},
+            pendingReviewOrder: null,
 
             addItem: (product: Product) =>
                 set((state) => {
@@ -69,6 +72,8 @@ export const useCartStore = create<CartState>()(
                         },
                     };
                 }),
+
+            setPendingReviewOrder: (order: Order | null) => set({ pendingReviewOrder: order }),
 
             clearCart: () => set({ items: {} }),
 

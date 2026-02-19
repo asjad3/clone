@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Clock, Truck, CreditCard, Store as StoreIcon, ShoppingCart } from "lucide-react";
 import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import FeaturedCarousel from "@/components/FeaturedCarousel";
 import ProductGrid from "@/components/ProductGrid";
 import CartSidebar, { MobileCartBar } from "@/components/CartSidebar";
+import ReviewPopup from "@/components/ReviewPopup";
+import { useCartStore } from "@/store/cart";
 import { Product, Store } from "@/types";
 
 interface StoreClientProps {
@@ -22,6 +24,59 @@ export default function StoreClient({
 }: StoreClientProps) {
     const [cartOpen, setCartOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const { pendingReviewOrder, setPendingReviewOrder } = useCartStore();
+
+    // Demo: show review popup on every page load (proof of concept)
+    useEffect(() => {
+        setPendingReviewOrder({
+            id: "demo-ord-001",
+            orderNumber: "LM00123456",
+            date: new Date().toISOString(),
+            deliveredAt: new Date().toISOString(),
+            subtotal: 680,
+            delivery: 0,
+            total: 680,
+            store,
+            rider: {
+                id: 1,
+                name: "Ahmed Khan",
+                photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop",
+                phone: "+92 300 1234567",
+                vehicle: "Motorcycle",
+            },
+            items: [
+                {
+                    product: {
+                        id: 101,
+                        name: "Fresh Milk 1L",
+                        weight: "1 Liter",
+                        price: 280,
+                        oldPrice: null,
+                        category_id: 1,
+                        image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400",
+                        in_stock: true,
+                        store_slug: store.slug,
+                    },
+                    quantity: 2,
+                },
+                {
+                    product: {
+                        id: 102,
+                        name: "Whole Wheat Bread",
+                        weight: "400g",
+                        price: 120,
+                        oldPrice: 150,
+                        category_id: 2,
+                        image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400",
+                        in_stock: true,
+                        store_slug: store.slug,
+                    },
+                    quantity: 1,
+                },
+            ],
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSearch = useCallback((query: string) => {
         setSearchQuery(query);
@@ -118,6 +173,18 @@ export default function StoreClient({
                 store={store}
             />
             <MobileCartBar store={store} onOpen={() => setCartOpen(true)} />
+
+            {/* Review Popup — lives here so cart open/close state doesn't unmount it */}
+            {pendingReviewOrder && (
+                <ReviewPopup
+                    order={pendingReviewOrder}
+                    isOpen={true}
+                    onClose={() => setPendingReviewOrder(null)}
+                    onSubmit={(reviews) => {
+                        console.log("Reviews submitted:", reviews);
+                    }}
+                />
+            )}
         </>
     );
 }

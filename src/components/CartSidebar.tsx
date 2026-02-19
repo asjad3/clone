@@ -5,6 +5,7 @@ import { Store } from "@/types";
 import { ShoppingBag, X, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useSession, signIn } from "next-auth/react";
+import { generateDemoOrder } from "@/lib/demoOrder";
 
 interface CartSidebarProps {
     isOpen: boolean;
@@ -22,11 +23,47 @@ export default function CartSidebar({ isOpen, onClose, store }: CartSidebarProps
         getSubtotal,
         getDeliveryFee,
         getTotal,
+        clearCart,
+        pendingReviewOrder,
+        setPendingReviewOrder,
     } = useCartStore();
     const totalItems = getTotalItems();
     const subtotal = getSubtotal();
     const delivery = getDeliveryFee(store.free_delivery_threshold, store.delivery_charges);
     const total = getTotal(store.free_delivery_threshold, store.delivery_charges);
+
+    const handleCheckout = () => {
+        if (!session) {
+            signIn("google");
+            onClose();
+            return;
+        }
+
+        // Generate a demo order
+        const orderItems = Object.values(items);
+        const demoOrder = generateDemoOrder(store, orderItems, subtotal, delivery, total);
+
+        // Clear the cart
+        clearCart();
+        
+        // Close the cart sidebar
+        onClose();
+
+        // Show review popup after a short delay (simulating order completion)
+        setTimeout(() => {
+            setPendingReviewOrder(demoOrder);
+        }, 2000);
+    };
+
+    const handleReviewSubmit = (reviews: any) => {
+        console.log("Reviews submitted:", reviews);
+        // In a real app, send this to your backend
+        // For now, just log it
+    };
+
+    const handleReviewClose = () => {
+        setPendingReviewOrder(null);
+    };
 
     if (!isOpen) return null;
 
@@ -106,19 +143,13 @@ export default function CartSidebar({ isOpen, onClose, store }: CartSidebarProps
                         style={{ background: "#E5A528" }}
                         onMouseOver={(e) => (e.currentTarget.style.background = "#C4881C")}
                         onMouseOut={(e) => (e.currentTarget.style.background = "#E5A528")}
-                        onClick={() => {
-                            if (!session) {
-                                signIn("google");
-                            } else {
-                                alert("Checkout coming soon!");
-                            }
-                            onClose();
-                        }}
+                        onClick={handleCheckout}
                     >
                         {session ? "Proceed to Checkout" : "Login to Checkout"}
                     </button>
                 </div>
             </div>
+
         </>
     );
 }

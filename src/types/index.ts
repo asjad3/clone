@@ -49,3 +49,60 @@ export interface PaginatedProducts {
     hasMore: boolean;
     total: number;
 }
+
+// ==================== RIDER ====================
+
+export interface Rider {
+    id: number;
+    name: string;
+    photo: string;
+    phone: string;
+    vehicle: string;
+}
+
+// ==================== ORDER ====================
+
+export interface Order {
+    id: string;
+    orderNumber: string;
+    date: string;
+    items: {
+        product: Product;
+        quantity: number;
+    }[];
+    subtotal: number;
+    delivery: number;
+    total: number;
+    store: Store;
+    rider: Rider;
+    deliveredAt?: string;
+}
+
+// ==================== REVIEWS ====================
+
+export interface RiderReview {
+    orderId: string;
+    riderId: number;
+    rating: number;
+    comment?: string;
+}
+
+export interface StoreReview {
+    orderId: string;
+    storeId: number;
+    rating: number;
+    comment?: string;
+}
+
+export interface ProductReview {
+    orderId: string;
+    productId: number;
+    rating: number;
+    comment?: string;
+}
+
+export interface OrderReviews {
+    rider?: RiderReview;
+    store?: StoreReview;
+    products: ProductReview[];
+}
