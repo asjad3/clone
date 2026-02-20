@@ -6,6 +6,8 @@ import {
     X,
     Star,
     Check,
+    ThumbsUp,
+    ThumbsDown,
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
@@ -24,6 +26,11 @@ interface ReviewPopupProps {
 
 type ReviewStep = "rider" | "store" | "products" | "complete";
 
+const RIDER_TAGS_POSITIVE = ["On time", "Friendly", "Careful handling"];
+const RIDER_TAGS_NEGATIVE = ["Late", "Rude", "Damaged items", "Wrong order"];
+const STORE_TAGS_POSITIVE = ["Great quality", "Well packed", "Fast"];
+const STORE_TAGS_NEGATIVE = ["Missing items", "Bad quality", "Slow prep"];
+
 export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: ReviewPopupProps) {
     const [currentStep, setCurrentStep] = useState<ReviewStep>("rider");
     const [riderRating, setRiderRating] = useState(0);
@@ -33,6 +40,8 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
     const [productRatings, setProductRatings] = useState<Record<number, number>>({});
     const [productComments, setProductComments] = useState<Record<number, string>>({});
     const [currentProductIndex, setCurrentProductIndex] = useState(0);
+    const [selectedRiderTags, setSelectedRiderTags] = useState<string[]>([]);
+    const [selectedStoreTags, setSelectedStoreTags] = useState<string[]>([]);
 
     const stepFlow: Array<Exclude<ReviewStep, "complete">> = ["rider", "store", "products"];
 
@@ -40,12 +49,12 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
 
     const handleRiderNext = () => {
         if (riderRating === 0) return;
-        if (riderRating <= 2 && !riderComment.trim()) return;
+        if (riderRating <= 2 && !riderComment.trim() && selectedRiderTags.length === 0) return;
         setCurrentStep("store");
     };
 
     const handleStoreNext = () => {
-        if (storeRating > 0 && storeRating <= 2 && !storeComment.trim()) return;
+        if (storeRating > 0 && storeRating <= 2 && !storeComment.trim() && selectedStoreTags.length === 0) return;
         setCurrentStep("products");
     };
 
@@ -67,14 +76,20 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
             orderId: order.id,
             riderId: order.rider.id,
             rating: riderRating,
-            comment: riderComment || undefined,
+            comment: [
+                ...selectedRiderTags,
+                riderComment,
+            ].filter(Boolean).join(". ") || undefined,
         };
 
         const storeReview: StoreReview = {
             orderId: order.id,
             storeId: order.store.id,
             rating: storeRating,
-            comment: storeComment || undefined,
+            comment: [
+                ...selectedStoreTags,
+                storeComment,
+            ].filter(Boolean).join(". ") || undefined,
         };
 
         const productReviews: ProductReview[] = order.items.map((item) => ({
@@ -116,7 +131,23 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
             setProductRatings({});
             setProductComments({});
             setCurrentProductIndex(0);
+            setSelectedRiderTags([]);
+            setSelectedStoreTags([]);
         }, 300);
+    };
+
+    const toggleTag = (tag: string, selected: string[], setSelected: (tags: string[]) => void) => {
+        setSelected(
+            selected.includes(tag) ? selected.filter((t) => t !== tag) : [...selected, tag],
+        );
+    };
+
+    const handleThumbRider = (isUp: boolean) => {
+        setRiderRating(isUp ? 5 : 1);
+    };
+
+    const handleThumbStore = (isUp: boolean) => {
+        setStoreRating(isUp ? 5 : 1);
     };
 
     const StarRating = ({
@@ -152,111 +183,168 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
         );
     };
 
-    const stepLabels = ["Rider", "Store", "Items"];
-
     return (
         <>
             <div className="rv-overlay" onClick={handleSkip} />
 
             <div className="rv-wrap">
-                <div className="rv-popup font-[family-name:var(--font-geist-sans)]">
+                <div className="rv-sheet font-[family-name:var(--font-geist-sans)]">
+                    {/* Drag handle */}
+                    <div className="rv-handle-bar">
+                        <div className="rv-handle" />
+                    </div>
+
                     {/* Close */}
                     <button
                         onClick={handleSkip}
                         className="rv-close"
                         aria-label="Close review popup"
                     >
-                        <X className="h-4 w-4" />
+                        <X className="h-5 w-5" />
                     </button>
 
-                    {/* Step Indicators */}
+                    {/* Progress dots */}
                     {currentStep !== "complete" && (
-                        <div className="rv-steps">
-                            {stepLabels.map((label, i) => (
-                                <div
-                                    key={label}
-                                    className={`rv-step-dot ${i < currentStepIndex ? "done" : ""} ${i === currentStepIndex ? "current" : ""}`}
-                                >
-                                    <span className="rv-dot" />
-                                    <span className="rv-step-label">{label}</span>
-                                </div>
+                        <div className="rv-progress-dots">
+                            {stepFlow.map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={`rv-pdot ${i <= currentStepIndex ? "filled" : ""}`}
+                                />
                             ))}
                         </div>
                     )}
 
                     {/* ───── RIDER STEP ───── */}
                     {currentStep === "rider" && (
-                        <div className="rv-body review-step">
-                            <h3 className="rv-title">How was delivery?</h3>
-                            <p className="rv-subtitle">Rate your experience with {order.rider.name}</p>
-
-                            <div className="rv-rider-card">
-                                <div className="rv-rider-avatar">
-                                    <Image src={order.rider.photo} alt={order.rider.name} fill className="object-cover" />
-                                </div>
-                                <div>
-                                    <p className="rv-rider-name">{order.rider.name}</p>
-                                    <p className="rv-rider-meta">{order.rider.vehicle}</p>
-                                </div>
+                        <div className="rv-content review-step">
+                            {/* Large centered avatar */}
+                            <div className="rv-hero-avatar">
+                                <Image src={order.rider.photo} alt={order.rider.name} fill className="object-cover" />
                             </div>
 
-                            <div className="rv-rating-area">
-                                <StarRating rating={riderRating} onRate={setRiderRating} starSize={32} />
-                                <p className="rv-rating-hint">
-                                    {riderRating === 0
-                                        ? "Tap a star"
-                                        : riderRating <= 2
-                                            ? "Tell us what went wrong"
-                                            : riderRating <= 4
-                                                ? "Thanks for rating"
-                                                : "Excellent!"}
-                                </p>
+                            <h2 className="rv-heading">How was your delivery?</h2>
+                            <p className="rv-subtext">{order.rider.name} · {order.rider.vehicle}</p>
+
+                            {/* Thumbs quick rate */}
+                            <div className="rv-thumbs">
+                                <button
+                                    type="button"
+                                    onClick={() => handleThumbRider(false)}
+                                    className={`rv-thumb-btn ${riderRating > 0 && riderRating <= 2 ? "selected negative" : ""}`}
+                                >
+                                    <ThumbsDown className="rv-thumb-icon" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleThumbRider(true)}
+                                    className={`rv-thumb-btn ${riderRating >= 4 ? "selected positive" : ""}`}
+                                >
+                                    <ThumbsUp className="rv-thumb-icon" />
+                                </button>
                             </div>
 
+                            {/* Stars for fine-tuning */}
+                            {riderRating > 0 && (
+                                <div className="rv-fine-tune animate-slideDown">
+                                    <StarRating rating={riderRating} onRate={setRiderRating} starSize={26} />
+                                </div>
+                            )}
+
+                            {/* Tags */}
+                            {riderRating > 0 && (
+                                <div className="rv-tags animate-slideDown">
+                                    {(riderRating <= 2 ? RIDER_TAGS_NEGATIVE : RIDER_TAGS_POSITIVE).map((tag) => (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => toggleTag(tag, selectedRiderTags, setSelectedRiderTags)}
+                                            className={`rv-tag ${selectedRiderTags.includes(tag) ? "selected" : ""}`}
+                                        >
+                                            {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Comment */}
                             {riderRating > 0 && (
                                 <div className="rv-comment-area animate-slideDown">
                                     <textarea
                                         value={riderComment}
                                         onChange={(e) => setRiderComment(e.target.value)}
-                                        placeholder={riderRating <= 2 ? "What happened?" : "Any feedback? (optional)"}
+                                        placeholder={riderRating <= 2 ? "Tell us more..." : "Add a comment (optional)"}
                                         className="rv-textarea"
-                                        rows={riderRating <= 2 ? 3 : 2}
+                                        rows={2}
                                     />
-                                    {riderRating <= 2 && !riderComment.trim() && (
-                                        <p className="rv-required-hint">Required for low ratings</p>
+                                    {riderRating <= 2 && !riderComment.trim() && selectedRiderTags.length === 0 && (
+                                        <p className="rv-hint-required">Please share what went wrong</p>
                                     )}
                                 </div>
                             )}
 
                             <button
                                 onClick={handleRiderNext}
-                                disabled={riderRating === 0 || (riderRating <= 2 && !riderComment.trim())}
+                                disabled={riderRating === 0 || (riderRating <= 2 && !riderComment.trim() && selectedRiderTags.length === 0)}
                                 className="rv-btn-primary"
                             >
-                                Continue
+                                Next
                             </button>
                         </div>
                     )}
 
                     {/* ───── STORE STEP ───── */}
                     {currentStep === "store" && (
-                        <div className="rv-body review-step">
-                            <h3 className="rv-title">How was the store?</h3>
-                            <p className="rv-subtitle">
-                                Rate {order.store.name} <span className="rv-optional-tag">optional</span>
-                            </p>
-
-                            <div className="rv-rating-area">
-                                <StarRating rating={storeRating} onRate={setStoreRating} starSize={32} />
-                                <p className="rv-rating-hint">
-                                    {storeRating === 0
-                                        ? "Skip or rate"
-                                        : storeRating <= 2
-                                            ? "Please explain briefly"
-                                            : "Thanks!"}
-                                </p>
+                        <div className="rv-content review-step">
+                            <div className="rv-store-icon-wrap">
+                                <span className="rv-store-emoji">🏪</span>
                             </div>
 
+                            <h2 className="rv-heading">How was {order.store.name}?</h2>
+                            <p className="rv-subtext">This step is optional</p>
+
+                            {/* Thumbs quick rate */}
+                            <div className="rv-thumbs">
+                                <button
+                                    type="button"
+                                    onClick={() => handleThumbStore(false)}
+                                    className={`rv-thumb-btn ${storeRating > 0 && storeRating <= 2 ? "selected negative" : ""}`}
+                                >
+                                    <ThumbsDown className="rv-thumb-icon" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleThumbStore(true)}
+                                    className={`rv-thumb-btn ${storeRating >= 4 ? "selected positive" : ""}`}
+                                >
+                                    <ThumbsUp className="rv-thumb-icon" />
+                                </button>
+                            </div>
+
+                            {/* Stars */}
+                            {storeRating > 0 && (
+                                <div className="rv-fine-tune animate-slideDown">
+                                    <StarRating rating={storeRating} onRate={setStoreRating} starSize={26} />
+                                </div>
+                            )}
+
+                            {/* Tags */}
+                            {storeRating > 0 && (
+                                <div className="rv-tags animate-slideDown">
+                                    {(storeRating <= 2 ? STORE_TAGS_NEGATIVE : STORE_TAGS_POSITIVE).map((tag) => (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => toggleTag(tag, selectedStoreTags, setSelectedStoreTags)}
+                                            className={`rv-tag ${selectedStoreTags.includes(tag) ? "selected" : ""}`}
+                                        >
+                                            {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Comment */}
                             {storeRating > 0 && (
                                 <div className="rv-comment-area animate-slideDown">
                                     <textarea
@@ -264,31 +352,31 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                                         onChange={(e) => setStoreComment(e.target.value)}
                                         placeholder={
                                             storeRating <= 2
-                                                ? "What was the issue?"
-                                                : "Anything to share? (optional)"
+                                                ? "What went wrong?"
+                                                : "Add a comment (optional)"
                                         }
                                         className="rv-textarea"
                                         rows={2}
                                     />
-                                    {storeRating > 0 && storeRating <= 2 && !storeComment.trim() && (
-                                        <p className="rv-required-hint">Required for low ratings</p>
+                                    {storeRating > 0 && storeRating <= 2 && !storeComment.trim() && selectedStoreTags.length === 0 && (
+                                        <p className="rv-hint-required">Please share what went wrong</p>
                                     )}
                                 </div>
                             )}
 
-                            <div className="rv-actions-row">
+                            <div className="rv-actions-split">
                                 <button
                                     onClick={() => setCurrentStep("products")}
-                                    className="rv-btn-ghost"
+                                    className="rv-btn-secondary"
                                 >
                                     Skip
                                 </button>
                                 <button
                                     onClick={handleStoreNext}
-                                    disabled={storeRating > 0 && storeRating <= 2 && !storeComment.trim()}
+                                    disabled={storeRating > 0 && storeRating <= 2 && !storeComment.trim() && selectedStoreTags.length === 0}
                                     className="rv-btn-primary"
                                 >
-                                    Continue
+                                    Next
                                 </button>
                             </div>
                         </div>
@@ -296,63 +384,37 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
 
                     {/* ───── PRODUCTS STEP ───── */}
                     {currentStep === "products" && (
-                        <div className="rv-body review-step">
-                            <h3 className="rv-title">Rate your items</h3>
-                            <p className="rv-subtitle">
-                                {ratedProductsCount}/{order.items.length} rated <span className="rv-optional-tag">optional</span>
+                        <div className="rv-content review-step">
+                            <h2 className="rv-heading">Rate your items</h2>
+                            <p className="rv-subtext">
+                                {ratedProductsCount} of {order.items.length} rated · optional
                             </p>
 
                             {currentProductItem && (
-                                <div className="rv-product-card">
-                                    <div className="rv-product-header">
-                                        <Image
-                                            src={currentProductItem.product.image}
-                                            alt={currentProductItem.product.name}
-                                            width={48}
-                                            height={48}
-                                            className="rv-product-img"
-                                        />
-                                        <div className="rv-product-info">
-                                            <h4 className="rv-product-name">
-                                                {currentProductItem.product.name}
-                                            </h4>
-                                            <p className="rv-product-qty">Qty: {currentProductItem.quantity}</p>
+                                <div className="rv-item-card">
+                                    <div className="rv-item-row">
+                                        <div className="rv-item-img-wrap">
+                                            <Image
+                                                src={currentProductItem.product.image}
+                                                alt={currentProductItem.product.name}
+                                                width={56}
+                                                height={56}
+                                                className="rv-item-img"
+                                            />
                                         </div>
-
-                                        {order.items.length > 1 && (
-                                            <div className="rv-product-nav">
-                                                <button
-                                                    onClick={handlePrevProduct}
-                                                    disabled={currentProductIndex === 0}
-                                                    className="rv-nav-btn"
-                                                    aria-label="Previous product"
-                                                >
-                                                    <ChevronLeft className="h-4 w-4" />
-                                                </button>
-                                                <span className="rv-product-counter">
-                                                    {currentProductIndex + 1}/{order.items.length}
-                                                </span>
-                                                <button
-                                                    onClick={handleNextProduct}
-                                                    disabled={currentProductIndex === order.items.length - 1}
-                                                    className="rv-nav-btn"
-                                                    aria-label="Next product"
-                                                >
-                                                    <ChevronRight className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        )}
+                                        <div className="rv-item-info">
+                                            <p className="rv-item-name">{currentProductItem.product.name}</p>
+                                            <p className="rv-item-qty">×{currentProductItem.quantity}</p>
+                                        </div>
                                     </div>
 
-                                    <div className="rv-product-rating">
-                                        <StarRating
-                                            rating={productRatings[currentProductItem.product.id] || 0}
-                                            onRate={(rating) =>
-                                                setProductRatings((prev) => ({ ...prev, [currentProductItem.product.id]: rating }))
-                                            }
-                                            starSize={24}
-                                        />
-                                    </div>
+                                    <StarRating
+                                        rating={productRatings[currentProductItem.product.id] || 0}
+                                        onRate={(rating) =>
+                                            setProductRatings((prev) => ({ ...prev, [currentProductItem.product.id]: rating }))
+                                        }
+                                        starSize={28}
+                                    />
 
                                     {productRatings[currentProductItem.product.id] > 0 &&
                                         productRatings[currentProductItem.product.id] <= 2 && (
@@ -364,34 +426,52 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                                                         [currentProductItem.product.id]: e.target.value,
                                                     }))
                                                 }
-                                                placeholder="What was wrong? (required)"
-                                                className="rv-textarea rv-textarea-sm"
+                                                placeholder="What was wrong?"
+                                                className="rv-textarea"
                                                 rows={2}
                                             />
                                         )}
-
-                                    {/* Product page dots */}
-                                    {order.items.length > 1 && (
-                                        <div className="rv-page-dots">
-                                            {order.items.map((item, index) => (
-                                                <button
-                                                    key={item.product.id}
-                                                    onClick={() => setCurrentProductIndex(index)}
-                                                    className={`rv-page-dot ${currentProductIndex === index ? "active" : ""} ${(productRatings[item.product.id] || 0) > 0 ? "rated" : ""}`}
-                                                    aria-label={`Go to product ${index + 1}`}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             )}
 
-                            <div className="rv-actions-row">
+                            {/* Product nav */}
+                            {order.items.length > 1 && (
+                                <div className="rv-item-nav">
+                                    <button
+                                        onClick={handlePrevProduct}
+                                        disabled={currentProductIndex === 0}
+                                        className="rv-item-nav-btn"
+                                        aria-label="Previous product"
+                                    >
+                                        <ChevronLeft className="h-5 w-5" />
+                                    </button>
+                                    <div className="rv-item-dots">
+                                        {order.items.map((item, index) => (
+                                            <button
+                                                key={item.product.id}
+                                                onClick={() => setCurrentProductIndex(index)}
+                                                className={`rv-item-dot ${currentProductIndex === index ? "active" : ""} ${(productRatings[item.product.id] || 0) > 0 ? "rated" : ""}`}
+                                                aria-label={`Go to product ${index + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={handleNextProduct}
+                                        disabled={currentProductIndex === order.items.length - 1}
+                                        className="rv-item-nav-btn"
+                                        aria-label="Next product"
+                                    >
+                                        <ChevronRight className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="rv-actions-split">
                                 <button
                                     onClick={handleProductsSubmit}
-                                    className="rv-btn-ghost"
+                                    className="rv-btn-secondary"
                                 >
-                                    Skip & finish
+                                    Skip
                                 </button>
                                 <button
                                     onClick={handleProductsSubmit}
@@ -406,31 +486,24 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
 
                     {/* ───── COMPLETE ───── */}
                     {currentStep === "complete" && (
-                        <div className="rv-body rv-complete review-step">
-                            <div className="rv-check-circle animate-scale-in">
-                                <Check className="h-7 w-7" />
+                        <div className="rv-content rv-done review-step">
+                            <div className="rv-done-check animate-scale-in">
+                                <Check className="h-8 w-8" />
                             </div>
-                            <h3 className="rv-title">Thank you</h3>
-                            <p className="rv-subtitle rv-complete-sub">
-                                Your feedback helps us improve the experience for everyone.
+                            <h2 className="rv-heading">Thanks for your feedback!</h2>
+                            <p className="rv-subtext rv-done-sub">
+                                Your ratings help us improve the experience.
                             </p>
-
-                            <button
-                                onClick={handleCompleteClose}
-                                className="rv-btn-primary"
-                            >
+                            <button onClick={handleCompleteClose} className="rv-btn-primary">
                                 Done
                             </button>
                         </div>
                     )}
 
-                    {/* Maybe later */}
+                    {/* Skip link */}
                     {currentStep !== "complete" && (
-                        <button
-                            onClick={handleSkip}
-                            className="rv-skip-link"
-                        >
-                            Maybe later
+                        <button onClick={handleSkip} className="rv-dismiss">
+                            Not now
                         </button>
                     )}
                 </div>

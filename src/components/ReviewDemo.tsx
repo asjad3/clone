@@ -74,23 +74,21 @@ export default function ReviewDemo() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f7f7f7] flex items-center justify-center p-6">
-            <div className="max-w-sm w-full text-center">
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1">
+        <div className="min-h-screen bg-white flex items-center justify-center p-6">
+            <div className="max-w-xs w-full text-center">
+                <p className="text-sm text-[#757575] mb-2">Post-delivery</p>
+                <h1 className="text-[28px] font-bold text-black tracking-tight mb-8 leading-tight">
                     Review System
                 </h1>
-                <p className="text-sm text-gray-500 mb-8">
-                    Post-delivery feedback flow
-                </p>
 
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-colors"
+                    className="w-full py-4 bg-black hover:bg-[#1a1a1a] active:scale-[0.98] text-white text-base font-semibold rounded-full transition-all"
                 >
                     Open Review
                 </button>
 
-                <p className="mt-3 text-xs text-gray-400">
+                <p className="mt-4 text-xs text-[#b0b0b0]">
                     Appears after order delivery
                 </p>
             </div>
