@@ -74,56 +74,24 @@ export default function ReviewDemo() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        Review System Demo
-                    </h1>
-                    <p className="text-gray-600">
-                        Progressive review popup for orders
-                    </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-xl p-6 mb-6 text-left">
-                    <h3 className="font-semibold text-gray-900 mb-3">Features:</h3>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                        <li className="flex items-start gap-2">
-                            <span className="text-yellow-500">★</span>
-                            <span>Step 1: Rate delivery rider (priority)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <span className="text-yellow-500">★</span>
-                            <span>Step 2: Rate the store</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <span className="text-yellow-500">★</span>
-                            <span>Step 3: Rate products</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <span className="text-yellow-500">★</span>
-                            <span>Low ratings require comments</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <span className="text-yellow-500">★</span>
-                            <span>Progress bar for visual feedback</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <span className="text-yellow-500">★</span>
-                            <span>Skip option for non-intrusive UX</span>
-                        </li>
-                    </ul>
-                </div>
+        <div className="min-h-screen bg-[#f7f7f7] flex items-center justify-center p-6">
+            <div className="max-w-sm w-full text-center">
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1">
+                    Review System
+                </h1>
+                <p className="text-sm text-gray-500 mb-8">
+                    Post-delivery feedback flow
+                </p>
 
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="w-full py-4 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold rounded-xl transition-colors shadow-lg shadow-yellow-400/30"
+                    className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-colors"
                 >
-                    Open Review Popup
+                    Open Review
                 </button>
 
-                <p className="mt-4 text-xs text-gray-500">
-                    This popup appears after order delivery
+                <p className="mt-3 text-xs text-gray-400">
+                    Appears after order delivery
                 </p>
             </div>
 
