@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Order, RiderReview, StoreReview, ProductReview } from "@/types";
-import { X, Star, CheckCircle, Package, Store as StoreIcon, Sparkles } from "lucide-react";
+import {
+    X,
+    Star,
+    CheckCircle2,
+    Package,
+    Store as StoreIcon,
+    Sparkles,
+    Bike,
+    MessageSquareText,
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-react";
 import Image from "next/image";
 
 interface ReviewPopupProps {
@@ -26,21 +37,19 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
     const [storeComment, setStoreComment] = useState("");
     const [productRatings, setProductRatings] = useState<Record<number, number>>({});
     const [productComments, setProductComments] = useState<Record<number, string>>({});
+    const [currentProductIndex, setCurrentProductIndex] = useState(0);
+
+    const stepFlow: Array<Exclude<ReviewStep, "complete">> = ["rider", "store", "products"];
 
     if (!isOpen) return null;
 
     const handleRiderNext = () => {
         if (riderRating === 0) return;
-        // If low rating and no comment, ask for comment
-        if (riderRating <= 2 && !riderComment.trim()) {
-            // Show comment box is already visible, just return to let user add comment
-            return;
-        }
+        if (riderRating <= 2 && !riderComment.trim()) return;
         setCurrentStep("store");
     };
 
     const handleStoreNext = () => {
-        // Store rating is optional in progressive mode
         if (storeRating > 0 && storeRating <= 2 && !storeComment.trim()) return;
         setCurrentStep("products");
     };
@@ -50,8 +59,16 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
         return rating > 0 && rating <= 2 && !(productComments[product.id] || "").trim();
     });
 
+    const currentStepNumber = currentStep === "complete" ? 3 : stepFlow.indexOf(currentStep) + 1;
+    const progress = (currentStepNumber / stepFlow.length) * 100;
+
+    const ratedProductsCount = useMemo(
+        () => order.items.filter(({ product }) => (productRatings[product.id] || 0) > 0).length,
+        [order.items, productRatings],
+    );
+    const currentProductItem = order.items[currentProductIndex];
+
     const handleProductsSubmit = () => {
-        // Compile all reviews
         const riderReview: RiderReview = {
             orderId: order.id,
             riderId: order.rider.id,
@@ -82,13 +99,20 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
         setCurrentStep("complete");
     };
 
+    const handleNextProduct = () => {
+        setCurrentProductIndex((prev) => Math.min(prev + 1, order.items.length - 1));
+    };
+
+    const handlePrevProduct = () => {
+        setCurrentProductIndex((prev) => Math.max(prev - 1, 0));
+    };
+
     const handleSkip = () => {
         onClose();
     };
 
     const handleCompleteClose = () => {
         onClose();
-        // Reset state
         setTimeout(() => {
             setCurrentStep("rider");
             setRiderRating(0);
@@ -97,22 +121,23 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
             setStoreComment("");
             setProductRatings({});
             setProductComments({});
+            setCurrentProductIndex(0);
         }, 300);
     };
 
     const StarRating = ({
         rating,
         onRate,
-        size = "w-8 h-8",
+        size = "w-7 h-7",
     }: {
         rating: number;
-        onRate: (rating: number) => void;
+        onRate: (nextRating: number) => void;
         size?: string;
     }) => {
         const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
         return (
-            <div className="flex gap-2">
+            <div className="flex items-center justify-center gap-1.5">
                 {[1, 2, 3, 4, 5].map((star) => (
                     <button
                         key={star}
@@ -120,13 +145,14 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                         onClick={() => onRate(star)}
                         onMouseEnter={() => setHoveredStar(star)}
                         onMouseLeave={() => setHoveredStar(null)}
-                        className="transition-transform hover:scale-110"
+                        className="rounded-full p-1.5 transition-all hover:scale-110 hover:bg-amber-50"
+                        aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
                     >
                         <Star
-                            className={`${size} transition-colors ${
+                            className={`${size} transition-colors duration-150 ${
                                 star <= (hoveredStar ?? rating)
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-gray-300"
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-gray-300/90"
                             }`}
                         />
                     </button>
@@ -137,72 +163,104 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
 
     return (
         <>
-            {/* Overlay */}
             <div className="review-overlay" onClick={handleSkip} />
 
-            {/* Popup */}
             <div className="review-popup-wrap">
-                <div className="review-popup">
-                    {/* Close button */}
+                <div className="review-popup font-[family-name:var(--font-geist-sans)]">
                     <button
                         onClick={handleSkip}
-                        className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-50 hover:bg-gray-100 transition-colors z-10"
+                        className="absolute right-5 top-5 rounded-full border border-gray-200 bg-white p-1.5 text-gray-500 transition-colors hover:bg-gray-50"
                         aria-label="Close review popup"
                     >
-                        <X className="w-4 h-4 text-gray-500" />
+                        <X className="h-4 w-4" />
                     </button>
 
-                    {/* Step: Rider Review */}
-                    {currentStep === "rider" && (
-                        <div className="review-step">
-                            <div className="pr-10 mb-5">
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full mb-3">
-                                    <Sparkles className="w-3 h-3" />
-                                    Delivered recently
-                                </span>
-                                <h3 className="text-xl font-bold text-gray-900">How was your delivery?</h3>
-                                <p className="text-sm text-gray-500 mt-1">Rate {order.rider.name}, your rider</p>
-                            </div>
+                    <div className="mb-5 flex items-start justify-between gap-4 border-b border-gray-100 pb-4 pr-10">
+                        <div className="min-w-0">
+                            <p className="font-[family-name:var(--font-geist-mono)] text-[11px] font-medium uppercase tracking-[0.14em] text-amber-600">
+                                Order Feedback
+                            </p>
+                            <h2 className="mt-1 text-lg font-semibold text-gray-900">Help us improve your experience</h2>
+                            <p className="mt-1 text-sm text-gray-500">Quick, progressive review • about 1 minute</p>
+                        </div>
 
-                            <div className="relative w-20 h-20 mx-auto mb-5 ring-4 ring-amber-50 rounded-full">
-                                <Image
-                                    src={order.rider.photo}
-                                    alt={order.rider.name}
-                                    fill
-                                    className="rounded-full object-cover"
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                            Step {currentStepNumber}/3
+                        </span>
+                    </div>
+
+                    {currentStep !== "complete" && (
+                        <div className="mb-6">
+                            <div className="mb-2 h-2 overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                    className="h-full rounded-full bg-amber-400 transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
                                 />
                             </div>
 
-                            <div className="flex justify-center mb-5">
-                                <StarRating rating={riderRating} onRate={setRiderRating} size="w-10 h-10" />
+                            <div className="grid grid-cols-3 gap-2 text-[11px] font-medium text-gray-500">
+                                <div className="flex items-center gap-1.5">
+                                    <Bike className="h-3.5 w-3.5" />
+                                    Rider
+                                </div>
+                                <div className="flex items-center justify-center gap-1.5">
+                                    <StoreIcon className="h-3.5 w-3.5" />
+                                    Store
+                                </div>
+                                <div className="flex items-center justify-end gap-1.5">
+                                    <Package className="h-3.5 w-3.5" />
+                                    Products
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {currentStep === "rider" && (
+                        <div className="review-step space-y-4.5">
+                            <div className="pr-10">
+                                <span className="mb-3 inline-flex items-center gap-1 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                                    <Sparkles className="h-3 w-3" />
+                                    Delivered recently
+                                </span>
+                                <h3 className="text-2xl font-semibold tracking-tight text-gray-900">How was your delivery?</h3>
+                                <p className="mt-1 text-sm text-gray-500">Rate {order.rider.name}, your rider</p>
                             </div>
 
-                            {riderRating > 0 && riderRating <= 2 && (
-                                <div className="mb-5 animate-slideDown">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        What went wrong? (Required)
-                                    </label>
-                                    <textarea
-                                        value={riderComment}
-                                        onChange={(e) => setRiderComment(e.target.value)}
-                                        placeholder="Tell us what happened..."
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        rows={4}
-                                    />
+                            <div className="mx-auto flex w-fit items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                                <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-amber-100">
+                                    <Image src={order.rider.photo} alt={order.rider.name} fill className="object-cover" />
                                 </div>
-                            )}
+                                <div>
+                                    <p className="text-sm font-medium text-gray-900">{order.rider.name}</p>
+                                    <p className="text-xs text-gray-500">{order.rider.vehicle}</p>
+                                </div>
+                            </div>
 
-                            {riderRating > 2 && (
-                                <div className="mb-5 animate-slideDown">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Any quick note? (Optional)
+                            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                <div className="mb-2 flex justify-center">
+                                    <StarRating rating={riderRating} onRate={setRiderRating} size="h-9 w-9" />
+                                </div>
+                                <p className="text-center text-xs text-gray-500">
+                                    {riderRating === 0
+                                        ? "Tap to rate"
+                                        : riderRating <= 2
+                                          ? "We’re sorry — tell us what happened"
+                                          : "Great, thanks for sharing"}
+                                </p>
+                            </div>
+
+                            {riderRating > 0 && (
+                                <div className="animate-slideDown space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                        <MessageSquareText className="h-4 w-4 text-gray-400" />
+                                        {riderRating <= 2 ? "What went wrong? (Required)" : "Any quick note? (Optional)"}
                                     </label>
                                     <textarea
                                         value={riderComment}
                                         onChange={(e) => setRiderComment(e.target.value)}
-                                        placeholder="Anything we should know..."
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        rows={3}
+                                        placeholder={riderRating <= 2 ? "Tell us what happened..." : "Anything we should know..."}
+                                        className="w-full resize-none rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-amber-300 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                                        rows={riderRating <= 2 ? 3 : 2}
                                     />
                                 </div>
                             )}
@@ -210,73 +268,73 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                             <button
                                 onClick={handleRiderNext}
                                 disabled={riderRating === 0 || (riderRating <= 2 && !riderComment.trim())}
-                                className="w-full py-3.5 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-500 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                className="w-full rounded-2xl bg-amber-400 py-3.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
                             >
-                                Submit Rating
+                                Continue
                             </button>
                         </div>
                     )}
 
-                    {/* Step: Store Review (stealth follow-up) */}
                     {currentStep === "store" && (
-                        <div className="review-step">
-                            <div className="pr-10 mb-6">
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full mb-3">
+                        <div className="review-step space-y-4.5">
+                            <div className="pr-10">
+                                <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
                                     Optional
                                 </span>
-                                <h3 className="text-lg font-bold text-gray-900">Thanks — one quick follow-up?</h3>
-                                <p className="text-sm text-gray-500 mt-1">How was {order.store.name} overall?</p>
+                                <h3 className="text-2xl font-semibold tracking-tight text-gray-900">
+                                    Thanks — one quick follow-up?
+                                </h3>
+                                <p className="mt-1 text-sm text-gray-500">How was {order.store.name} overall?</p>
                             </div>
 
-                            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <StoreIcon className="w-8 h-8 text-yellow-600" />
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50">
+                                <StoreIcon className="h-8 w-8 text-amber-600" />
                             </div>
 
-                            <div className="flex justify-center mb-5">
-                                <StarRating rating={storeRating} onRate={setStoreRating} size="w-9 h-9" />
+                            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-4">
+                                <div className="mb-2 flex justify-center">
+                                    <StarRating rating={storeRating} onRate={setStoreRating} size="h-8 w-8" />
+                                </div>
+                                <p className="text-center text-xs text-gray-500">
+                                    {storeRating === 0
+                                        ? "Skip if you prefer"
+                                        : storeRating <= 2
+                                          ? "Low ratings need a short reason"
+                                          : "Awesome — thanks"}
+                                </p>
                             </div>
 
-                            {storeRating > 0 && storeRating <= 2 && (
-                                <div className="mb-5 animate-slideDown">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tell us what was wrong (Required for low ratings)
+                            {storeRating > 0 && (
+                                <div className="animate-slideDown space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                        <MessageSquareText className="h-4 w-4 text-gray-400" />
+                                        {storeRating <= 2 ? "Tell us what was wrong (Required)" : "Comment (Optional)"}
                                     </label>
                                     <textarea
                                         value={storeComment}
                                         onChange={(e) => setStoreComment(e.target.value)}
-                                        placeholder="Your feedback helps us improve..."
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        rows={3}
+                                        placeholder={
+                                            storeRating <= 2
+                                                ? "Your feedback helps us improve..."
+                                                : "Anything you’d like to share?"
+                                        }
+                                        className="w-full resize-none rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-amber-300 focus:outline-none focus:ring-4 focus:ring-amber-100"
+                                        rows={2}
                                     />
                                 </div>
                             )}
 
-                            {storeRating > 2 && (
-                                <div className="mb-5 animate-slideDown">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Comment (Optional)
-                                    </label>
-                                    <textarea
-                                        value={storeComment}
-                                        onChange={(e) => setStoreComment(e.target.value)}
-                                        placeholder="Anything to share?"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        rows={3}
-                                    />
-                                </div>
-                            )}
-
-                            <div className="flex gap-3">
+                            <div className="grid grid-cols-2 gap-3 pt-1">
                                 <button
                                     onClick={() => setCurrentStep("products")}
-                                    className="flex-1 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                                    className="rounded-2xl border border-gray-200 bg-white py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                                 >
                                     Skip
                                 </button>
                                 <button
                                     onClick={handleStoreNext}
                                     disabled={storeRating > 0 && storeRating <= 2 && !storeComment.trim()}
-                                    className="flex-1 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-500 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    className="rounded-2xl bg-amber-400 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
                                 >
                                     Continue
                                 </button>
@@ -284,82 +342,109 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                         </div>
                     )}
 
-                    {/* Step: Product Reviews (stealth follow-up) */}
                     {currentStep === "products" && (
-                        <div className="review-step">
-                            <div className="pr-10 mb-6">
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full mb-3">
+                        <div className="review-step space-y-4.5">
+                            <div className="pr-10">
+                                <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
                                     Optional
                                 </span>
-                                <h3 className="text-lg font-bold text-gray-900">Last quick thing</h3>
-                                <p className="text-sm text-gray-500 mt-1">Rate any items you want</p>
+                                <h3 className="text-2xl font-semibold tracking-tight text-gray-900">Last quick thing</h3>
+                                <p className="mt-1 text-sm text-gray-500">Rate any items you want from this order</p>
                             </div>
 
-                            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <Package className="w-8 h-8 text-yellow-600" />
+                            <div className="rounded-2xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-xs text-gray-600">
+                                {ratedProductsCount} of {order.items.length} item{order.items.length > 1 ? "s" : ""} rated • {currentProductIndex + 1}/{order.items.length}
                             </div>
 
-                            <div className="max-h-80 overflow-y-auto space-y-3 mb-6 scrollbar-hide pr-1">
-                                {order.items.map(({ product, quantity }) => (
-                                    <div
-                                        key={product.id}
-                                        className="border border-gray-200 rounded-xl p-3.5 hover:border-gray-300 transition-colors"
-                                    >
-                                        <div className="flex items-start gap-3 mb-2.5">
-                                            <Image
-                                                src={product.image}
-                                                alt={product.name}
-                                                width={48}
-                                                height={48}
-                                                className="rounded-lg object-cover"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-sm font-medium text-gray-900 truncate">
-                                                    {product.name}
-                                                </h4>
-                                                <p className="text-xs text-gray-500">Qty: {quantity}</p>
-                                            </div>
+                            {currentProductItem && (
+                                <div className="rounded-2xl border border-gray-200 bg-white p-3.5 transition-colors">
+                                    <div className="mb-3 flex items-start gap-3">
+                                        <Image
+                                            src={currentProductItem.product.image}
+                                            alt={currentProductItem.product.name}
+                                            width={52}
+                                            height={52}
+                                            className="rounded-xl border border-gray-100 object-cover"
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <h4 className="truncate text-sm font-medium text-gray-900">
+                                                {currentProductItem.product.name}
+                                            </h4>
+                                            <p className="mt-0.5 text-xs text-gray-500">Qty: {currentProductItem.quantity}</p>
                                         </div>
 
-                                        <div className="mb-2">
-                                            <StarRating
-                                                rating={productRatings[product.id] || 0}
-                                                onRate={(rating) =>
-                                                    setProductRatings((prev) => ({ ...prev, [product.id]: rating }))
-                                                }
-                                                size="w-5 h-5"
-                                            />
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={handlePrevProduct}
+                                                disabled={currentProductIndex === 0}
+                                                className="rounded-lg border border-gray-200 p-1 text-gray-500 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                                aria-label="Previous product"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={handleNextProduct}
+                                                disabled={currentProductIndex === order.items.length - 1}
+                                                className="rounded-lg border border-gray-200 p-1 text-gray-500 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                                aria-label="Next product"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </button>
                                         </div>
+                                    </div>
 
-                                        {productRatings[product.id] > 0 && productRatings[product.id] <= 2 && (
+                                    <div className="mb-2">
+                                        <StarRating
+                                            rating={productRatings[currentProductItem.product.id] || 0}
+                                            onRate={(rating) =>
+                                                setProductRatings((prev) => ({ ...prev, [currentProductItem.product.id]: rating }))
+                                            }
+                                            size="h-5 w-5"
+                                        />
+                                    </div>
+
+                                    {productRatings[currentProductItem.product.id] > 0 &&
+                                        productRatings[currentProductItem.product.id] <= 2 && (
                                             <textarea
-                                                value={productComments[product.id] || ""}
+                                                value={productComments[currentProductItem.product.id] || ""}
                                                 onChange={(e) =>
                                                     setProductComments((prev) => ({
                                                         ...prev,
-                                                        [product.id]: e.target.value,
+                                                        [currentProductItem.product.id]: e.target.value,
                                                     }))
                                                 }
                                                 placeholder="What was the issue? (Required for low ratings)"
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                                className="mt-2 w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-amber-300 focus:outline-none focus:ring-4 focus:ring-amber-100"
                                                 rows={2}
                                             />
                                         )}
-                                    </div>
-                                ))}
-                            </div>
 
-                            <div className="flex gap-3">
+                                    <div className="mt-3 flex items-center justify-center gap-1.5">
+                                        {order.items.map((item, index) => (
+                                            <button
+                                                key={item.product.id}
+                                                onClick={() => setCurrentProductIndex(index)}
+                                                className={`h-1.5 rounded-full transition-all ${
+                                                    currentProductIndex === index ? "w-5 bg-amber-400" : "w-1.5 bg-gray-300"
+                                                }`}
+                                                aria-label={`Go to product ${index + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-3 pt-1">
                                 <button
                                     onClick={handleProductsSubmit}
-                                    className="flex-1 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                                    className="rounded-2xl border border-gray-200 bg-white py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                                 >
                                     Skip & Finish
                                 </button>
                                 <button
                                     onClick={handleProductsSubmit}
                                     disabled={hasMissingLowProductComment}
-                                    className="flex-1 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-500 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    className="rounded-2xl bg-amber-400 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
                                 >
                                     Submit
                                 </button>
@@ -367,28 +452,29 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                         </div>
                     )}
 
-                    {/* Step: Complete */}
                     {currentStep === "complete" && (
-                        <div className="review-step text-center py-2">
-                            <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center animate-scaleIn">
-                                <CheckCircle className="w-12 h-12 text-green-600" />
+                        <div className="review-step py-2 text-center">
+                            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-green-200 bg-green-50 animate-scale-in">
+                                <CheckCircle2 className="h-11 w-11 text-green-600" />
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">Thanks for your feedback</h3>
-                            <p className="text-gray-600 mb-8">This helps us improve deliveries and product quality.</p>
+                            <h3 className="text-2xl font-semibold tracking-tight text-gray-900">Thanks for your feedback</h3>
+                            <p className="mx-auto mt-2 max-w-sm text-sm text-gray-600">
+                                Your ratings help us improve delivery quality, store standards, and product freshness.
+                            </p>
+
                             <button
                                 onClick={handleCompleteClose}
-                                className="w-full py-3 bg-yellow-400 text-gray-900 font-semibold rounded-xl hover:bg-yellow-500 transition-colors"
+                                className="mt-7 w-full rounded-2xl bg-amber-400 py-3.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-500"
                             >
                                 Done
                             </button>
                         </div>
                     )}
 
-                    {/* Skip link */}
                     {currentStep !== "complete" && (
                         <button
                             onClick={handleSkip}
-                            className="w-full text-center text-sm text-gray-500 hover:text-gray-700 mt-4 transition-colors"
+                            className="mt-4 w-full text-center text-sm font-medium text-gray-500 transition-colors hover:text-gray-700"
                         >
                             Maybe later
                         </button>

@@ -645,10 +645,10 @@ body {
 .review-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(12, 12, 14, 0.48);
   z-index: 300;
   animation: fadeIn 0.3s ease;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(6px);
 }
 
 .review-popup-wrap {
@@ -658,20 +658,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 20px;
 }
 
 .review-popup {
   position: relative;
-  background: white;
-  border-radius: 20px;
-  padding: 32px 28px;
-  max-width: 500px;
-  width: min(500px, calc(100% - 32px));
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-  animation: reviewPopupIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: linear-gradient(180deg, #ffffff 0%, #fdfdfd 100%);
+  border-radius: 24px;
+  border: 1px solid #f1f5f9;
+  padding: 22px;
+  max-width: 560px;
+  width: min(560px, calc(100% - 40px));
+  max-height: none;
+  overflow: hidden;
+  box-shadow: 0 32px 64px -28px rgba(2, 6, 23, 0.4);
+  animation: reviewPopupIn 0.24s ease;
 }
 
 .review-step {
@@ -722,11 +723,15 @@ body {
   }
 
   .review-popup {
-    border-radius: 20px 20px 0 0;
+    border-radius: 24px 24px 0 0;
     width: 100%;
     max-width: none;
-    max-height: 90vh;
-    animation: reviewPopupInMobile 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-height: none;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    padding: 20px 16px 16px;
+    animation: reviewPopupInMobile 0.24s ease;
   }
 }
 
