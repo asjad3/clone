@@ -31,8 +31,8 @@ export default function StoreClient({
         setPendingReviewOrder({
             id: "demo-ord-001",
             orderNumber: "LM00123456",
-            date: new Date().toISOString(),
-            deliveredAt: new Date().toISOString(),
+            date: "2026-02-23T15:00:00.000Z",
+            deliveredAt: "2026-02-23T15:30:00.000Z",
             subtotal: 680,
             delivery: 0,
             total: 680,
