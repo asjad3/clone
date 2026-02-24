@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Order, RiderReview, StoreReview, ProductReview } from "@/types";
-import { X, Check, ThumbsUp, ThumbsDown, Camera } from "lucide-react";
+import { X, Check, ThumbsUp, ThumbsDown, Camera, Heart } from "lucide-react";
 import Image from "next/image";
 
 interface ReviewPopupProps {
@@ -49,25 +49,11 @@ const SENTIMENT_LABELS: Record<string, string> = {
 const AUTO_CLOSE_MS = 2800;
 const COLLAPSE_PX = 180;
 
-/* ── Sentiment Icons (inline SVG, not emoji) ── */
+/* ── Sentiment Icons ── */
 const SentimentIcon = ({ type, size = 22 }: { type: "dislike" | "okay" | "love"; size?: number }) => {
-    if (type === "dislike") return (
-        <svg viewBox="0 0 24 24" fill="none" width={size} height={size}>
-            <path d="M9 22h1c1 0 2-1 2-2v-4h4.7c.5 0 .9-.1 1.3-.4.4-.3.6-.6.7-1.1l1.8-7.2c.1-.3 0-.6-.1-.9-.2-.3-.5-.4-.8-.4H13V3c0-.5-.2-1-.6-1.4C12 1.2 11.5 1 11 1l-2 7v14z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-            <path d="M4 22V10H2v12h2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        </svg>
-    );
-    if (type === "okay") return (
-        <svg viewBox="0 0 24 24" fill="none" width={size} height={size}>
-            <path d="M15 2h-1c-1 0-2 1-2 2v4H7.3c-.5 0-.9.1-1.3.4-.4.3-.6.6-.7 1.1L3.5 16.7c-.1.3 0 .6.1.9.2.3.5.4.8.4H11v3c0 .5.2 1 .6 1.4.4.4.9.6 1.4.6l2-7V2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-            <path d="M20 2v12h2V2h-2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        </svg>
-    );
-    return (
-        <svg viewBox="0 0 24 24" fill="none" width={size} height={size}>
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        </svg>
-    );
+    if (type === "dislike") return <ThumbsDown size={size} strokeWidth={2} />;
+    if (type === "okay") return <ThumbsUp size={size} strokeWidth={2} />;
+    return <Heart size={size} strokeWidth={2} />;
 };
 
 function SentimentPicker({ value, onChange }: { value: Sentiment; onChange: (v: Sentiment) => void }) {
@@ -246,14 +232,10 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                             <div className={`rv__bar${collapsed ? " rv__bar--on" : ""}`}>
                                 <div className="rv__bar-top">
                                     <div className="rv__bar-left">
-                                        <div className="rv__bar-store">
-                                            <span className="rv__bar-store-name">{order.store.name}</span>
-                                        </div>
-                                        <SentimentPicker value={storeSentiment} onChange={setStoreSentiment} />
-                                        {sMeta && <span className="rv__bar-badge">{sMeta.label}</span>}
+                                        <span className="rv__bar-store-name">{order.store.name}</span>
                                     </div>
                                     <div className="rv__bar-right">
-                                        <span style={{ fontSize: 11, color: '#999', fontWeight: 500 }}>
+                                        <span className="rv__bar-count">
                                             {votedCount}/{order.items.length} rated
                                         </span>
                                         <button className="rv__bar-up" onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Scroll to top">
@@ -261,11 +243,6 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                                         </button>
                                     </div>
                                 </div>
-                                {storeTags.length > 0 && (
-                                    <div className="rv__bar-tags">
-                                        {storeTags.map((t) => <span key={t} className="rv__bar-tag">{t}</span>)}
-                                    </div>
-                                )}
                                 <div className="rv__bar-prog"><div className="rv__bar-fill" style={{ width: `${order.items.length > 0 ? (votedCount / order.items.length) * 100 : 0}%` }} /></div>
                             </div>
 
