@@ -232,7 +232,7 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                             {/* Sticky CTA */}
                             <div className="rv__bot">
                                 <button className="rv__cta" disabled={!riderSentiment} onClick={goStore}>
-                                    Next — Rate {order.store.name}
+                                    Next:  Rate {order.store.name}
                                 </button>
                             </div>
                         </div>
@@ -309,7 +309,7 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
                                 <div className="rv__prod-section">
                                     <div className="rv__pad">
                                         <h3 className="rv__prod-hd">Rate your items</h3>
-                                        <p className="rv__prod-sub">Tap 👍 or 👎 for each item</p>
+
                                     </div>
                                     {order.items.map((item) => {
                                         const v = productVotes[item.product.id] || null;
