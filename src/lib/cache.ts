@@ -1,11 +1,21 @@
 import { unstable_cache } from "next/cache";
-import { products } from "@/data/products";
-import { stores } from "@/data/stores";
-import { areas } from "@/data/areas";
 
-// ==================== ADVANCED CACHING WITH unstable_cache ====================
-// unstable_cache allows us to cache expensive server-side computations
-// with tag-based invalidation via revalidateTag()
+// ─── Static data (fallback when Supabase is not configured) ───
+import { products as staticProducts } from "@/data/products";
+import { stores as staticStores } from "@/data/stores";
+import { areas as staticAreas } from "@/data/areas";
+
+// ─── Supabase DAL (the real database) ───
+import { fetchAreas, fetchStores, fetchStoreBySlug, fetchProducts } from "@/lib/supabase/dal";
+
+// ============================================================================
+// Feature flag: should we use Supabase or static data?
+//
+//   In .env.local, set NEXT_PUBLIC_USE_SUPABASE=true to use the database.
+//   If it's missing or "false", the old static JSON arrays are used.
+//   This lets you develop without Docker/Supabase running.
+// ============================================================================
+const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === "true";
 
 /**
  * Cached function to get products with computed fields
@@ -13,9 +23,16 @@ import { areas } from "@/data/areas";
  */
 export const getCachedProducts = unstable_cache(
     async (storeSlug: string, page: number = 0, limit: number = 8) => {
-        // Simulate expensive computation/DB query
-        const storeProducts = products.filter((p) => p.store_slug === storeSlug);
+        if (USE_SUPABASE) {
+            return fetchProducts({
+                storeSlug,
+                cursor: page * limit,
+                limit,
+            });
+        }
 
+        // ── Fallback: static data ──
+        const storeProducts = staticProducts.filter((p) => p.store_slug === storeSlug);
         const start = page * limit;
         const paginated = storeProducts.slice(start, start + limit);
         const hasMore = start + limit < storeProducts.length;
@@ -41,14 +58,18 @@ export const getCachedProducts = unstable_cache(
  */
 export const getCachedStore = unstable_cache(
     async (slug: string) => {
-        const store = stores.find((s) => s.slug === slug);
+        if (USE_SUPABASE) {
+            return fetchStoreBySlug(slug);
+        }
+
+        // ── Fallback: static data ──
+        const store = staticStores.find((s) => s.slug === slug);
         if (!store) return null;
 
-        // Add computed fields
         return {
             ...store,
-            productCount: products.filter((p) => p.store_slug === slug).length,
-            areaNames: areas
+            productCount: staticProducts.filter((p) => p.store_slug === slug).length,
+            areaNames: staticAreas
                 .filter((a) => store.areas.includes(a.id))
                 .map((a) => a.name),
         };
@@ -65,9 +86,21 @@ export const getCachedStore = unstable_cache(
  */
 export const getCachedAreaStats = unstable_cache(
     async () => {
-        return areas.map((area) => ({
+        if (USE_SUPABASE) {
+            const [areas, stores] = await Promise.all([
+                fetchAreas(),
+                fetchStores(),
+            ]);
+            return areas.map((area) => ({
+                ...area,
+                storeCount: stores.filter((s) => s.areas.includes(area.id)).length,
+            }));
+        }
+
+        // ── Fallback: static data ──
+        return staticAreas.map((area) => ({
             ...area,
-            storeCount: stores.filter((s) => s.areas.includes(area.id)).length,
+            storeCount: staticStores.filter((s) => s.areas.includes(area.id)).length,
         }));
     },
     ["area-stats-cache"],

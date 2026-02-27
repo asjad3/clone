@@ -20,6 +20,9 @@ export async function revalidateProducts() {
  * Uses revalidateTag() for selective cache invalidation
  */
 export async function revalidateStore(slug: string) {
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+        return { success: false, error: "Invalid slug" };
+    }
     revalidateTag(`store-${slug}`, "max");
     revalidatePath(`/store/${slug}`, "page");
     return { success: true, slug, timestamp: Date.now() };
@@ -35,19 +38,22 @@ export async function submitContactForm(formData: FormData) {
 
     await new Promise((r) => setTimeout(r, 500));
 
-    if (!name || !message) {
+    if (!name?.trim() || !message?.trim()) {
         return { success: false, error: "Name and message are required" };
     }
 
-    console.log("[Server Action] Contact form:", { name, message });
-    return { success: true, message: `Thank you ${name}! We'll get back to you soon.` };
+    // TODO: persist to database or send email
+    return { success: true, message: `Thank you ${name.trim()}! We'll get back to you soon.` };
 }
 
 /**
  * Server Action: Track product view for analytics
  */
 export async function trackProductView(productId: number, storeSlug: string) {
-    console.log("[Server Action] Product view:", { productId, storeSlug, timestamp: Date.now() });
+    if (!Number.isFinite(productId) || productId < 1) return { tracked: false };
+    if (!/^[a-z0-9-]+$/.test(storeSlug)) return { tracked: false };
+
+    // TODO: persist analytics event to database
     return { tracked: true };
 }
 

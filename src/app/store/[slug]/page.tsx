@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { stores } from "@/data/stores";
+import { stores as staticStores } from "@/data/stores";
 import { getCachedProducts, getCachedStore } from "@/lib/cache";
+import { fetchStores } from "@/lib/supabase/dal";
 import dynamic from "next/dynamic";
+
+const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === "true";
 
 // Dynamic import with code splitting
 const StoreClient = dynamic(() => import("./StoreClient"), {
@@ -19,6 +22,7 @@ export const revalidate = 300;
 
 // Generate static params for all stores at build time (SSG with ISR)
 export async function generateStaticParams() {
+    const stores = USE_SUPABASE ? await fetchStores() : staticStores;
     return stores.map((store) => ({
         slug: store.slug,
     }));

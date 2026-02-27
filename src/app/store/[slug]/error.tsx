@@ -12,7 +12,12 @@ export default function StoreError({
     reset: () => void;
 }) {
     useEffect(() => {
-        console.error("Store page error:", error);
+        // Only log the safe digest in production, not the full error stack
+        if (process.env.NODE_ENV === "development") {
+            console.error("Store page error:", error);
+        } else if (error.digest) {
+            console.error("Store page error digest:", error.digest);
+        }
     }, [error]);
 
     return (

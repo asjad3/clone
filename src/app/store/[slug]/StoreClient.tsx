@@ -213,7 +213,7 @@ export default function StoreClient({
                     isOpen={true}
                     onClose={() => setPendingReviewOrder(null)}
                     onSubmit={(reviews) => {
-                        console.log("Reviews submitted:", reviews);
+                        // TODO: persist reviews to database
                     }}
                 />
             )}

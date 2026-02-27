@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
-import { areas } from "@/data/areas";
-import { stores } from "@/data/stores";
+import { areas as staticAreas } from "@/data/areas";
+import { stores as staticStores } from "@/data/stores";
 import { getCachedAreaStats } from "@/lib/cache";
+import { fetchAreas, fetchStores } from "@/lib/supabase/dal";
 import dynamic from "next/dynamic";
+
+const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === "true";
 
 // Dynamic import with loading fallback — code splitting technique
 const HomeClient = dynamic(() => import("./HomeClient"), {
@@ -53,7 +56,11 @@ export const metadata: Metadata = {
 };
 
 // JSON-LD Structured Data for SEO
-function JsonLd() {
+async function JsonLd() {
+  const [areas, stores] = USE_SUPABASE
+    ? await Promise.all([fetchAreas(), fetchStores()])
+    : [staticAreas, staticStores];
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "GroceryStore",
@@ -81,7 +88,10 @@ function JsonLd() {
 
 export default async function HomePage() {
   // Server-side data fetch with unstable_cache
-  const areasWithStats = await getCachedAreaStats();
+  const [areasWithStats, stores] = await Promise.all([
+    getCachedAreaStats(),
+    USE_SUPABASE ? fetchStores() : Promise.resolve(staticStores),
+  ]);
 
   return (
     <>

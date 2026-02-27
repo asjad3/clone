@@ -56,7 +56,7 @@ export default function CartSidebar({ isOpen, onClose, store }: CartSidebarProps
     };
 
     const handleReviewSubmit = (reviews: any) => {
-        console.log("Reviews submitted:", reviews);
+        // TODO: persist reviews to database
         // In a real app, send this to your backend
         // For now, just log it
     };

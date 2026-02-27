@@ -1,15 +1,29 @@
-import { stores } from "@/data/stores";
+import { stores as staticStores } from "@/data/stores";
+import { fetchStoreBySlug } from "@/lib/supabase/dal";
 import { NextRequest, NextResponse } from "next/server";
 
 // ISR: Revalidate individual store every 10 minutes
 export const revalidate = 600;
+
+const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === "true";
 
 export async function GET(
     _request: NextRequest,
     { params }: { params: Promise<{ slug: string }> }
 ) {
     const { slug } = await params;
-    const store = stores.find((s) => s.slug === slug);
+
+    // Validate slug format
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+        return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
+    }
+
+    let store;
+    if (USE_SUPABASE) {
+        store = await fetchStoreBySlug(slug);
+    } else {
+        store = staticStores.find((s) => s.slug === slug) ?? null;
+    }
 
     if (!store) {
         return NextResponse.json({ error: "Store not found" }, { status: 404 });

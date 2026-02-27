@@ -1,15 +1,16 @@
-import { areas } from "@/data/areas";
+import { areas as staticAreas } from "@/data/areas";
+import { fetchAreas } from "@/lib/supabase/dal";
 import { NextResponse } from "next/server";
 
 // ISR: Revalidate areas every 1 hour (areas rarely change)
 export const revalidate = 3600;
 
-// Force static generation for this route
-export const dynamic = "force-static";
+const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === "true";
 
 export async function GET() {
-    // Simulate server-side data fetching with caching
-    const response = NextResponse.json(
+    const areas = USE_SUPABASE ? await fetchAreas() : staticAreas;
+
+    return NextResponse.json(
         { areas, total: areas.length },
         {
             status: 200,
@@ -20,5 +21,4 @@ export async function GET() {
             },
         }
     );
-    return response;
 }

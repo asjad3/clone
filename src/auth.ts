@@ -59,10 +59,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     // Enable JWT strategy (serverless-friendly, no DB needed)
     trustHost: true,
-    secret:
-        process.env.AUTH_SECRET ||
-        process.env.NEXTAUTH_SECRET ||
-        "lootmart-demo-fallback-secret-change-in-production",
+    secret: (() => {
+        const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+        if (!secret && process.env.NODE_ENV === "production") {
+            throw new Error("AUTH_SECRET environment variable is required in production");
+        }
+        // Only fall back to a generated value in local development
+        return secret || "dev-only-secret-" + (process.env.HOSTNAME || "localhost");
+    })(),
     session: {
         strategy: "jwt",
         maxAge: 30 * 24 * 60 * 60, // 30 days
