@@ -29,7 +29,13 @@ export default function AdminAreasPage() {
         setLoading(false);
     }, []);
 
-    useEffect(() => { loadAreas(); }, [loadAreas]);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            void loadAreas();
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [loadAreas]);
 
     function openCreate() {
         setForm({ name: "", city: "", is_active: true });

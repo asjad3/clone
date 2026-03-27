@@ -24,7 +24,6 @@ export default function CartSidebar({ isOpen, onClose, store }: CartSidebarProps
         getDeliveryFee,
         getTotal,
         clearCart,
-        pendingReviewOrder,
         setPendingReviewOrder,
     } = useCartStore();
     const totalItems = getTotalItems();
@@ -53,16 +52,6 @@ export default function CartSidebar({ isOpen, onClose, store }: CartSidebarProps
         setTimeout(() => {
             setPendingReviewOrder(demoOrder);
         }, 2000);
-    };
-
-    const handleReviewSubmit = (reviews: any) => {
-        // TODO: persist reviews to database
-        // In a real app, send this to your backend
-        // For now, just log it
-    };
-
-    const handleReviewClose = () => {
-        setPendingReviewOrder(null);
     };
 
     if (!isOpen) return null;

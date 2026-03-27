@@ -5,6 +5,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import type { CookieOptions } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 
 // ─── Env var validation (fail fast at startup, not at request time) ───
@@ -17,8 +18,23 @@ function requireEnv(name: string): string {
     return value;
 }
 
-const SUPABASE_URL = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-const SUPABASE_ANON_KEY = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+let cachedEnv:
+    | {
+        url: string;
+        anonKey: string;
+    }
+    | null = null;
+
+function getSupabasePublicEnv() {
+    if (!cachedEnv) {
+        cachedEnv = {
+            url: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+            anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+        };
+    }
+
+    return cachedEnv;
+}
 
 /**
  * Creates a Supabase client for use in SERVER components, API routes, and Server Actions.
@@ -32,17 +48,18 @@ const SUPABASE_ANON_KEY = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
  *   - Each request gets its own fresh client (no shared state between users)
  */
 export async function createClient() {
+    const { url, anonKey } = getSupabasePublicEnv();
     const cookieStore = await cookies();
 
     return createServerClient<Database>(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
+        url,
+        anonKey,
         {
             cookies: {
                 getAll() {
                     return cookieStore.getAll();
                 },
-                setAll(cookiesToSet) {
+                setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) =>
                             cookieStore.set(name, value, options)
@@ -63,9 +80,10 @@ export async function createClient() {
  * dynamic sources (like `cookies()`) in cached scopes.
  */
 export function createCacheSafeClient() {
+    const { url, anonKey } = getSupabasePublicEnv();
     return createSupabaseClient<Database>(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
+        url,
+        anonKey,
         {
             auth: {
                 autoRefreshToken: false,
@@ -82,6 +100,7 @@ export function createCacheSafeClient() {
  * ⚠️ NEVER expose the service_role key to the browser!
  */
 export function createAdminClient() {
+    const { url } = getSupabasePublicEnv();
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
         throw new Error(
@@ -91,7 +110,7 @@ export function createAdminClient() {
     }
 
     return createSupabaseClient(
-        SUPABASE_URL,
+        url,
         serviceRoleKey,
         {
             auth: {

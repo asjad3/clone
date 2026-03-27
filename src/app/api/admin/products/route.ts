@@ -1,25 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { fetchAdminProducts, createAdminProduct } from "@/lib/supabase/admin-dal";
+import {
+    adminJson,
+    ensureAdmin,
+    handleAdminError,
+    parseLimitParam,
+    parseOptionalSearch,
+    parsePageParam,
+} from "@/lib/api/admin-route";
+import { parseProductPayload } from "@/lib/api/admin-validations";
 
 export async function GET(req: NextRequest) {
-    const url = new URL(req.url);
-    const page = Number(url.searchParams.get("page") ?? "0");
-    const limit = Number(url.searchParams.get("limit") ?? "20");
-    const search = url.searchParams.get("search") ?? undefined;
+    const authResult = await ensureAdmin(req);
+    if (!authResult.authorized) return authResult.response;
 
-    const result = await fetchAdminProducts({ page, limit, search });
-    return NextResponse.json(result);
+    try {
+        const url = new URL(req.url);
+        const page = parsePageParam(url.searchParams.get("page"), 0, 10000);
+        const limit = parseLimitParam(url.searchParams.get("limit"), 20, 100);
+        const search = parseOptionalSearch(url.searchParams.get("search"), 100);
+
+        const result = await fetchAdminProducts({ page, limit, search });
+        return adminJson(result);
+    } catch (error) {
+        return handleAdminError(error, "Failed to fetch products");
+    }
 }
 
 export async function POST(req: NextRequest) {
+    const authResult = await ensureAdmin(req);
+    if (!authResult.authorized) return authResult.response;
+
     try {
-        const body = await req.json();
-        const data = await createAdminProduct(body);
+        const rawBody = await req.json();
+        const data = await createAdminProduct(parseProductPayload(rawBody, "create"));
         revalidateTag("products", "max");
-        return NextResponse.json(data, { status: 201 });
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Failed to create product";
-        return NextResponse.json({ error: message }, { status: 400 });
+        return adminJson(data, { status: 201 });
+    } catch (error) {
+        return handleAdminError(error, "Failed to create product");
     }
 }

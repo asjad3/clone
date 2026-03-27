@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Pencil, Trash2, X, Plus } from "lucide-react";
+import { Search, Pencil, Trash2, X } from "lucide-react";
 
 interface StoreProduct {
     store_product_id: number;
@@ -78,7 +78,11 @@ export default function AdminStoreProductsPage() {
     }, [page, search, storeFilter]);
 
     useEffect(() => {
-        loadProducts();
+        const timer = setTimeout(() => {
+            void loadProducts();
+        }, 0);
+
+        return () => clearTimeout(timer);
     }, [loadProducts]);
 
     function openEdit(p: StoreProduct) {

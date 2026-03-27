@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ReviewPopup from "@/components/ReviewPopup";
-import { Order } from "@/types";
+import type { Order, OrderReviews } from "@/types";
 
 // Demo order for testing
 const demoOrder: Order = {
@@ -68,7 +68,8 @@ const demoOrder: Order = {
 export default function ReviewDemo() {
     const [isOpen, setIsOpen] = useState(false);
 
-    const handleSubmit = (reviews: any) => {
+    const handleSubmit = (_reviews: OrderReviews) => {
+        void _reviews;
         // TODO: persist reviews to database
         alert("Reviews submitted! Check console for details.");
     };

@@ -80,7 +80,13 @@ export default function AdminOrdersPage() {
         setLoading(false);
     }, [page, statusFilter]);
 
-    useEffect(() => { loadOrders(); }, [loadOrders]);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            void loadOrders();
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [loadOrders]);
 
     async function openDetail(orderId: string) {
         setLoadingDetail(true);

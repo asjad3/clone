@@ -95,16 +95,20 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
     const scrollRef = useRef<HTMLDivElement>(null);
     const autoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const closeAndReset = useCallback(() => {
+        if (autoRef.current) clearTimeout(autoRef.current);
+        onClose();
+        setTimeout(() => {
+            setStep("rider"); setRiderSentiment(null); setRiderComment(""); setRiderTags([]);
+            setStoreSentiment(null); setStoreComment(""); setStoreTags([]);
+            setProductVotes({}); setCollapsed(false);
+        }, 350);
+    }, [onClose]);
+
     useEffect(() => {
         if (step === "complete") autoRef.current = setTimeout(closeAndReset, AUTO_CLOSE_MS);
         return () => { if (autoRef.current) clearTimeout(autoRef.current); };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [step]);
-
-    useEffect(() => {
-        setCollapsed(false);
-        if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    }, [step]);
+    }, [closeAndReset, step]);
 
     const handleScroll = useCallback(() => {
         if (!scrollRef.current) return;
@@ -118,20 +122,13 @@ export default function ReviewPopup({ order, isOpen, onClose, onSubmit }: Review
     const toggle = (t: string, arr: string[], set: (a: string[]) => void) =>
         set(arr.includes(t) ? arr.filter((x) => x !== t) : [...arr, t]);
 
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const closeAndReset = () => {
-        if (autoRef.current) clearTimeout(autoRef.current);
-        onClose();
-        setTimeout(() => {
-            setStep("rider"); setRiderSentiment(null); setRiderComment(""); setRiderTags([]);
-            setStoreSentiment(null); setStoreComment(""); setStoreTags([]);
-            setProductVotes({}); setCollapsed(false);
-        }, 350);
-    };
-
     const dismiss = () => onClose();
 
-    const goStore = () => { if (riderSentiment) setStep("store"); };
+    const goStore = () => {
+        if (!riderSentiment) return;
+        setCollapsed(false);
+        setStep("store");
+    };
 
     const submitAll = () => {
         onSubmit({

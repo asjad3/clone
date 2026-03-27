@@ -1,12 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { fetchAdminOrders } from "@/lib/supabase/admin-dal";
+import {
+    adminJson,
+    ensureAdmin,
+    handleAdminError,
+    ORDER_STATUSES,
+    parseLimitParam,
+    parsePageParam,
+} from "@/lib/api/admin-route";
 
 export async function GET(req: NextRequest) {
-    const url = new URL(req.url);
-    const page = Number(url.searchParams.get("page") ?? "0");
-    const limit = Number(url.searchParams.get("limit") ?? "20");
-    const status = url.searchParams.get("status") ?? undefined;
+    const authResult = await ensureAdmin(req);
+    if (!authResult.authorized) return authResult.response;
 
-    const result = await fetchAdminOrders({ page, limit, status });
-    return NextResponse.json(result);
+    try {
+        const url = new URL(req.url);
+        const page = parsePageParam(url.searchParams.get("page"), 0, 10000);
+        const limit = parseLimitParam(url.searchParams.get("limit"), 20, 100);
+        const statusParam = url.searchParams.get("status");
+        let status: string | undefined;
+
+        if (statusParam) {
+            if (statusParam === "all") {
+                status = "all";
+            } else if (ORDER_STATUSES.includes(statusParam as (typeof ORDER_STATUSES)[number])) {
+                status = statusParam;
+            } else {
+                return adminJson({ error: "Invalid status filter" }, { status: 400 });
+            }
+        }
+
+        const result = await fetchAdminOrders({ page, limit, status });
+        return adminJson(result);
+    } catch (error) {
+        return handleAdminError(error, "Failed to fetch orders");
+    }
 }

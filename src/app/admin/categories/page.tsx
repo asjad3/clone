@@ -31,7 +31,13 @@ export default function AdminCategoriesPage() {
         setLoading(false);
     }, []);
 
-    useEffect(() => { loadCategories(); }, [loadCategories]);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            void loadCategories();
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [loadCategories]);
 
     function openCreate(parentId: number | null = null) {
         setForm({ name: "", slug: "", parent_id: parentId, is_active: true });

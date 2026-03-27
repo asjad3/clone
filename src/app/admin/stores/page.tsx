@@ -53,7 +53,13 @@ export default function AdminStoresPage() {
         setLoading(false);
     }, []);
 
-    useEffect(() => { loadStores(); }, [loadStores]);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            void loadStores();
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [loadStores]);
 
     function openEdit(s: AdminStore) {
         setForm({

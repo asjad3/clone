@@ -75,7 +75,11 @@ export default function AdminProductsPage() {
     }, [page, search]);
 
     useEffect(() => {
-        loadProducts();
+        const timer = setTimeout(() => {
+            void loadProducts();
+        }, 0);
+
+        return () => clearTimeout(timer);
     }, [loadProducts]);
 
     useEffect(() => {
@@ -221,7 +225,7 @@ export default function AdminProductsPage() {
                                         <button className="admin-btn-icon" onClick={() => openEdit(p)} title="Edit">
                                             <Pencil size={16} />
                                         </button>
-                                        <button className="admin-btn-icon danger" onClick={() => setDeleteId(p.id)} title="Delete">
+                                        <button className="admin-btn-icon danger" onClick={() => setDeleteId(p.id)} title="Archive">
                                             <Trash2 size={16} />
                                         </button>
                                     </td>
@@ -373,19 +377,19 @@ export default function AdminProductsPage() {
                 <div className="admin-modal-overlay" onClick={() => setDeleteId(null)}>
                     <div className="admin-modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
                         <div className="admin-modal-header">
-                            <h3>Delete Product</h3>
+                            <h3>Archive Product</h3>
                             <button className="admin-btn-icon" onClick={() => setDeleteId(null)}>
                                 <X size={18} />
                             </button>
                         </div>
                         <div className="admin-modal-body">
                             <p className="admin-confirm-text">
-                                Are you sure you want to delete this product? This action <strong>cannot be undone</strong>.
+                                Are you sure you want to archive this product? It will be hidden from storefront listings.
                             </p>
                         </div>
                         <div className="admin-modal-footer">
                             <button className="admin-btn admin-btn-secondary" onClick={() => setDeleteId(null)}>Cancel</button>
-                            <button className="admin-btn admin-btn-danger" onClick={handleDelete}>Delete</button>
+                            <button className="admin-btn admin-btn-danger" onClick={handleDelete}>Archive</button>
                         </div>
                     </div>
                 </div>

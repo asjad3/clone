@@ -1,18 +1,27 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+import { isAdminEmail } from "@/lib/auth/admin-access";
 
 const hasGoogleOAuth = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+const isProductionBuild = process.env.NEXT_PHASE === "phase-production-build";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-    providers: hasGoogleOAuth
-        ? [
-            Google({
-                clientId: process.env.GOOGLE_CLIENT_ID!,
-                clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-            }),
-        ]
-        : [
+    providers: (() => {
+        if (hasGoogleOAuth) {
+            return [
+                Google({
+                    clientId: process.env.GOOGLE_CLIENT_ID!,
+                    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+                }),
+            ];
+        }
+
+        if (process.env.NODE_ENV === "production" && !isProductionBuild) {
+            throw new Error("Google OAuth must be configured in production");
+        }
+
+        return [
             Credentials({
                 id: "google",
                 name: "Google",
@@ -27,7 +36,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     };
                 },
             }),
-        ],
+        ];
+    })(),
     pages: {
         signIn: "/",
     },
@@ -50,10 +60,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Authorized callback — middleware-level auth check
         authorized({ auth: authSession, request: { nextUrl } }) {
             const isLoggedIn = !!authSession?.user;
-            const isProtected = nextUrl.pathname.startsWith("/checkout");
-            if (isProtected && !isLoggedIn) {
+            const pathname = nextUrl.pathname;
+            const isCheckoutPath = pathname.startsWith("/checkout");
+            const isAdminPagePath = pathname.startsWith("/admin");
+            const isAdminApiPath = pathname.startsWith("/api/admin");
+
+            if (isCheckoutPath && !isLoggedIn) {
                 return Response.redirect(new URL("/", nextUrl));
             }
+
+            if (isAdminPagePath || isAdminApiPath) {
+                const email = authSession?.user?.email ?? null;
+                const allowed = isLoggedIn && isAdminEmail(email);
+
+                if (!allowed) {
+                    if (isAdminApiPath) {
+                        return new Response(JSON.stringify({ error: "Forbidden" }), {
+                            status: 403,
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Cache-Control": "private, no-store, no-cache, must-revalidate",
+                            },
+                        });
+                    }
+
+                    return Response.redirect(new URL("/", nextUrl));
+                }
+            }
+
             return true;
         },
     },
@@ -61,7 +95,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     trustHost: true,
     secret: (() => {
         const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
-        if (!secret && process.env.NODE_ENV === "production") {
+        if (!secret && process.env.NODE_ENV === "production" && !isProductionBuild) {
             throw new Error("AUTH_SECRET environment variable is required in production");
         }
         // Only fall back to a generated value in local development

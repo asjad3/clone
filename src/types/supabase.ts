@@ -30,6 +30,8 @@ export type OrderStatus =
     | "refunded";
 export type PaymentMethod = "cod" | "card" | "jazzcash" | "easypaisa" | "wallet";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type MetafieldEntityType = "store_product" | "store" | "category";
+export type MetafieldValueType = "text" | "number" | "boolean" | "json";
 
 // ─── Table Row Types ───
 
@@ -256,6 +258,62 @@ export interface OrderItemRow {
     created_at: string;
 }
 
+export interface MetafieldDefinitionRow {
+    id: number;
+    entity_type: MetafieldEntityType;
+    namespace: string;
+    key: string;
+    value_type: MetafieldValueType;
+    validation_json: Json;
+    is_indexed: boolean;
+    owner_team: string | null;
+    status: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface StoreProductMetafieldRow {
+    id: number;
+    store_product_id: number;
+    definition_id: number;
+    namespace: string;
+    key: string;
+    value_text: string | null;
+    value_num: number | null;
+    value_bool: boolean | null;
+    value_json: Json | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface StoreMetafieldRow {
+    id: number;
+    store_id: number;
+    definition_id: number;
+    namespace: string;
+    key: string;
+    value_text: string | null;
+    value_num: number | null;
+    value_bool: boolean | null;
+    value_json: Json | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CategoryMetafieldRow {
+    id: number;
+    category_id: number;
+    definition_id: number;
+    namespace: string;
+    key: string;
+    value_text: string | null;
+    value_num: number | null;
+    value_bool: boolean | null;
+    value_json: Json | null;
+    created_at: string;
+    updated_at: string;
+}
+
 // ─── Storefront View (v_storefront_products) ───
 
 export interface StorefrontProductRow {
@@ -378,6 +436,30 @@ export interface Database {
                 Update: never; // order_items are immutable
                 Relationships: [];
             };
+            metafield_definitions: {
+                Row: MetafieldDefinitionRow;
+                Insert: Omit<MetafieldDefinitionRow, "id" | "created_at" | "updated_at">;
+                Update: Partial<Omit<MetafieldDefinitionRow, "id" | "created_at">>;
+                Relationships: [];
+            };
+            store_product_metafields: {
+                Row: StoreProductMetafieldRow;
+                Insert: Omit<StoreProductMetafieldRow, "id" | "created_at" | "updated_at">;
+                Update: Partial<Omit<StoreProductMetafieldRow, "id" | "created_at">>;
+                Relationships: [];
+            };
+            store_metafields: {
+                Row: StoreMetafieldRow;
+                Insert: Omit<StoreMetafieldRow, "id" | "created_at" | "updated_at">;
+                Update: Partial<Omit<StoreMetafieldRow, "id" | "created_at">>;
+                Relationships: [];
+            };
+            category_metafields: {
+                Row: CategoryMetafieldRow;
+                Insert: Omit<CategoryMetafieldRow, "id" | "created_at" | "updated_at">;
+                Update: Partial<Omit<CategoryMetafieldRow, "id" | "created_at">>;
+                Relationships: [];
+            };
         };
         Views: {
             v_storefront_products: {
@@ -393,6 +475,8 @@ export interface Database {
             order_status: OrderStatus;
             payment_method: PaymentMethod;
             payment_status: PaymentStatus;
+            metafield_entity_type: MetafieldEntityType;
+            metafield_value_type: MetafieldValueType;
         };
         CompositeTypes: Record<string, never>;
     };

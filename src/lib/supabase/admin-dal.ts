@@ -99,7 +99,10 @@ export async function updateAdminProduct(id: number, updates: Record<string, unk
 
 export async function deleteAdminProduct(id: number) {
     const sb = createAdminClient();
-    const { error } = await sb.from("global_products").delete().eq("id", id);
+    const { error } = await sb
+        .from("global_products")
+        .update({ is_active: false })
+        .eq("id", id);
     if (error) throw new Error(error.message);
 }
 
@@ -390,6 +393,18 @@ export async function fetchAdminOrderById(id: string) {
         .single();
     if (error) return null;
     return data;
+}
+
+export async function fetchAdminOrderStatusById(id: string) {
+    const sb = createAdminClient();
+    const { data, error } = await sb
+        .from("orders")
+        .select("status")
+        .eq("id", id)
+        .single();
+
+    if (error || !data) return null;
+    return data.status as string;
 }
 
 export async function updateAdminOrderStatus(id: string, status: string) {

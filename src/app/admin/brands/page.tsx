@@ -28,7 +28,13 @@ export default function AdminBrandsPage() {
         setLoading(false);
     }, []);
 
-    useEffect(() => { loadBrands(); }, [loadBrands]);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            void loadBrands();
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [loadBrands]);
 
     function openCreate() {
         setForm({ name: "", slug: "", logo_url: "", is_active: true });
